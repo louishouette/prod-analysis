@@ -158,9 +158,108 @@ plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
 plt.tight_layout()
 plt.savefig('age_vs_production_scatter.png')
 
+# Add correlation matrix between all observable parameters
+plt.figure(figsize=(14, 12))
+numeric_cols = ['Age', 'Plants', 'Plants Productifs', 'Taux de Productivité (%)', 
+                'Poids produit (g)', 'Nombre de truffe', 'Poids moyen (g)', 'Production au plant (g)']
+corr_matrix = df[numeric_cols].corr()
+mask = np.triu(np.ones_like(corr_matrix, dtype=bool))
+sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', fmt='.2f', linewidths=0.5, mask=mask)
+plt.title('Correlation Matrix Between Observable Parameters')
+plt.tight_layout()
+plt.savefig('correlation_matrix.png')
+
+# Add distribution analysis for key metrics
+# 11. Distribution of Productivity Rate by Species
+plt.figure(figsize=(14, 10))
+# Filter to only include species with some productivity
+species_with_prod = df[df['Taux de Productivité (%)'] > 0]['Espèce'].unique()
+prod_data = df[df['Espèce'].isin(species_with_prod)]
+sns.boxplot(x='Espèce', y='Taux de Productivité (%)', data=prod_data)
+plt.title('Distribution of Productivity Rate by Species')
+plt.xlabel('Species')
+plt.ylabel('Productivity Rate (%)')
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.savefig('productivity_distribution_by_species.png')
+
+# 12. Violin plots for truffle weight distribution by species
+plt.figure(figsize=(14, 10))
+# Filter to only include species with truffles
+truffle_species_data = df[(df['Poids moyen (g)'] > 0)]
+sns.violinplot(x='Espèce', y='Poids moyen (g)', data=truffle_species_data)
+plt.title('Truffle Weight Distribution by Species')
+plt.xlabel('Species')
+plt.ylabel('Average Truffle Weight (g)')
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.savefig('weight_distribution_by_species.png')
+
+# 13. Pair plot for key metrics
+plt.figure(figsize=(16, 16))
+# Select a subset of the data to make the pair plot readable
+sample_df = df[df['Taux de Productivité (%)'] > 0].sample(min(50, len(df[df['Taux de Productivité (%)'] > 0])))
+sns.pairplot(sample_df[['Age', 'Taux de Productivité (%)', 'Poids moyen (g)', 'Production au plant (g)', 'Espèce']], 
+             hue='Espèce', height=2.5)
+plt.suptitle('Relationships Between Key Metrics', y=1.02)
+plt.tight_layout()
+plt.savefig('key_metrics_pairplot.png')
+
+# 14. Bubble chart: Age vs. Productivity vs. Average Weight
+plt.figure(figsize=(14, 10))
+productive_data = df[df['Taux de Productivité (%)'] > 0]
+species_colors = {species: color for species, color in zip(
+    productive_data['Espèce'].unique(), 
+    sns.color_palette('husl', len(productive_data['Espèce'].unique()))
+)}
+
+for species in productive_data['Espèce'].unique():
+    species_data = productive_data[productive_data['Espèce'] == species]
+    plt.scatter(
+        species_data['Age'], 
+        species_data['Taux de Productivité (%)'],
+        s=species_data['Poids moyen (g)'] * 5,  # Size based on average weight
+        alpha=0.7,
+        color=species_colors[species],
+        label=species
+    )
+
+plt.title('Age vs. Productivity Rate (size represents average truffle weight)')
+plt.xlabel('Age (years)')
+plt.ylabel('Productivity Rate (%)')
+plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+plt.grid(True, linestyle='--', alpha=0.7)
+plt.tight_layout()
+plt.savefig('age_productivity_weight_bubble.png')
+
+# 15. Heatmap of Production by Age and Species
+plt.figure(figsize=(15, 10))
+species_age_pivot = df.pivot_table(
+    values='Production au plant (g)', 
+    index='Espèce', 
+    columns='Age', 
+    aggfunc='mean')
+sns.heatmap(species_age_pivot, annot=True, cmap='viridis', fmt='.1f', linewidths=.5)
+plt.title('Average Production per Plant (g) by Species and Age')
+plt.tight_layout()
+plt.savefig('production_by_age_species_heatmap.png')
+
+# 16. Regression plot for Age vs Productivity
+plt.figure(figsize=(12, 8))
+sns.regplot(x='Age', y='Taux de Productivité (%)', 
+            data=df[df['Taux de Productivité (%)'] > 0], 
+            scatter_kws={'alpha':0.5}, 
+            line_kws={'color':'red'})
+plt.title('Regression Analysis: Age vs Productivity Rate')
+plt.xlabel('Age (years)')
+plt.ylabel('Productivity Rate (%)')
+plt.grid(True, linestyle='--', alpha=0.7)
+plt.tight_layout()
+plt.savefig('age_productivity_regression.png')
+
 # Create additional insights
 
-# 11. Production by Age Distribution
+# 17. Production by Age Distribution
 plt.figure(figsize=(10, 6))
 age_prod = df.groupby('Age')['Poids produit (g)'].sum()
 plt.pie(age_prod, labels=age_prod.index, autopct='%1.1f%%', startangle=90, 
@@ -169,7 +268,7 @@ plt.title('Distribution of Total Production by Age')
 plt.tight_layout()
 plt.savefig('production_by_age_pie.png')
 
-# 12. Species Performance Comparison
+# 18. Species Performance Comparison with enhanced metrics
 plt.figure(figsize=(14, 8))
 species_perf = df.groupby('Espèce').agg({
     'Plants': 'sum',
@@ -181,13 +280,131 @@ species_perf = df.groupby('Espèce').agg({
 # Calculate derived metrics
 species_perf['Productivity Rate (%)'] = (species_perf['Plants Productifs'] / species_perf['Plants'] * 100).round(2)
 species_perf['Avg Truffles per Productive Plant'] = (species_perf['Nombre de truffe'] / species_perf['Plants Productifs']).fillna(0).round(2)
+species_perf['Avg Weight per Truffle (g)'] = (species_perf['Poids produit (g)'] / species_perf['Nombre de truffe']).fillna(0).round(2)
+species_perf['Revenue Potential Index'] = (species_perf['Productivity Rate (%)'] * species_perf['Avg Weight per Truffle (g)']).round(2)
 
 # Filter for species with at least one productive plant
-species_perf_filtered = species_perf[species_perf['Plants Productifs'] > 0].sort_values('Productivity Rate (%)', ascending=False)
+species_perf_filtered = species_perf[species_perf['Plants Productifs'] > 0].sort_values('Revenue Potential Index', ascending=False)
 
-# Plot as a horizontal bar chart
-sns.barplot(y='Espèce', x='Productivity Rate (%)', data=species_perf_filtered, palette='viridis')
-plt.title('Species Productivity Rate (%)')
+# Plot as a horizontal bar chart with enhanced formatting
+sns.barplot(y='Espèce', x='Revenue Potential Index', data=species_perf_filtered, palette='viridis')
+plt.title('Species Revenue Potential Index (Productivity × Avg Weight)')
+plt.xlabel('Revenue Potential Index')
+plt.tight_layout()
+plt.savefig('species_revenue_potential.png')
+
+# 19. Radar Chart for Species Comparison
+from matplotlib.path import Path
+from matplotlib.spines import Spine
+from matplotlib.transforms import Affine2D
+
+# Prepare data for radar chart - select top 5 species with highest productivity
+top5_species = species_perf.sort_values('Productivity Rate (%)', ascending=False).head(5)
+
+# Select metrics for comparison
+metrics = ['Productivity Rate (%)', 'Avg Truffles per Productive Plant', 'Avg Weight per Truffle (g)']
+
+# Normalize the data for radar chart
+normalized_data = pd.DataFrame()
+for metric in metrics:
+    normalized_data[metric] = (top5_species[metric] - top5_species[metric].min()) / \
+                           (top5_species[metric].max() - top5_species[metric].min())
+
+# Create radar chart
+num_metrics = len(metrics)
+angles = np.linspace(0, 2*np.pi, num_metrics, endpoint=False).tolist()
+angles += angles[:1]  # Close the loop
+
+fig, ax = plt.subplots(figsize=(10, 10), subplot_kw=dict(polar=True))
+
+# Add background grid and labels
+ax.set_theta_offset(np.pi / 2)
+ax.set_theta_direction(-1)
+ax.set_rlabel_position(0)
+plt.xticks(angles[:-1], metrics)
+
+# Plot each species
+colors = plt.cm.viridis(np.linspace(0, 1, len(top5_species)))
+for i, species in enumerate(top5_species['Espèce']):
+    values = normalized_data.iloc[i].values.tolist()
+    values += values[:1]  # Close the loop
+    ax.plot(angles, values, color=colors[i], linewidth=2, label=species)
+    ax.fill(angles, values, color=colors[i], alpha=0.25)
+
+plt.legend(loc='upper right', bbox_to_anchor=(0.1, 0.1))
+plt.title('Top 5 Species Performance Comparison', size=15)
+plt.tight_layout()
+plt.savefig('species_radar_chart.png')
+
+# 20. Cluster Analysis of Parcels Based on Performance
+from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import KMeans
+
+# Prepare data for clustering
+parcel_metrics = df.groupby('Parcelle').agg({
+    'Taux de Productivité (%)': 'mean',
+    'Poids moyen (g)': 'mean',
+    'Production au plant (g)': 'mean'
+}).reset_index()
+
+# Remove rows with NaN values
+parcel_metrics = parcel_metrics.dropna()
+
+# Standardize the data for clustering
+X = parcel_metrics[['Taux de Productivité (%)', 'Poids moyen (g)', 'Production au plant (g)']]
+X_scaled = StandardScaler().fit_transform(X)
+
+# Determine optimal number of clusters using the elbow method
+inertia = []
+k_range = range(1, min(6, len(parcel_metrics)))
+for k in k_range:
+    kmeans = KMeans(n_clusters=k, random_state=42)
+    kmeans.fit(X_scaled)
+    inertia.append(kmeans.inertia_)
+
+# Plot elbow method
+plt.figure(figsize=(10, 6))
+plt.plot(k_range, inertia, 'bo-')
+plt.xlabel('Number of Clusters')
+plt.ylabel('Inertia')
+plt.title('Elbow Method for Optimal k')
+plt.grid(True)
+plt.tight_layout()
+plt.savefig('cluster_elbow_method.png')
+
+# Perform clustering with the optimal k (typically where the elbow occurs)
+optimal_k = 3  # Set a default, this would normally be determined from the elbow plot
+kmeans = KMeans(n_clusters=optimal_k, random_state=42)
+parcel_metrics['Cluster'] = kmeans.fit_predict(X_scaled)
+
+# Plot the clusters
+plt.figure(figsize=(12, 8))
+sns.scatterplot(
+    x='Taux de Productivité (%)',
+    y='Production au plant (g)',
+    hue='Cluster',
+    size='Poids moyen (g)',
+    sizes=(50, 500),
+    data=parcel_metrics,
+    palette='viridis'
+)
+
+# Add parcel labels to the plot
+for i, row in parcel_metrics.iterrows():
+    plt.annotate(row['Parcelle'], (row['Taux de Productivité (%)'], row['Production au plant (g)']), 
+                 fontsize=9, alpha=0.7)
+
+plt.title('Cluster Analysis of Parcels Based on Performance Metrics')
+plt.tight_layout()
+plt.savefig('parcel_cluster_analysis.png')
+
+# 21. Species Productivity Rate (%) - original visualization with enhanced styling
+plt.figure(figsize=(14, 8))
+sns.barplot(y='Espèce', x='Productivity Rate (%)', data=species_perf_filtered, palette='plasma')
+plt.title('Species Productivity Rate (%)', fontsize=16)
+plt.xlabel('Productivity Rate (%)', fontsize=12)
+plt.ylabel('Species', fontsize=12)
+plt.grid(axis='x', linestyle='--', alpha=0.7)
 plt.tight_layout()
 plt.savefig('species_productivity_rate.png')
 
