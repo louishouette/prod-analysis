@@ -4,10 +4,31 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 from matplotlib.ticker import MaxNLocator
+import matplotlib as mpl
+from cycler import cycler
 
-# Set plot style
+# Set plot style for more appealing visuals
 plt.style.use('seaborn-v0_8-whitegrid')
-sns.set_palette('viridis')
+
+# Custom color palette for seasons
+season_colors = {
+    '2023-2024': '#1f77b4',  # Blue
+    '2024-2025': '#ff7f0e',  # Orange
+    'Target': '#d62728'       # Red
+}
+
+# Set font properties
+plt.rcParams.update({
+    'font.family': 'sans-serif',
+    'font.sans-serif': ['Arial', 'DejaVu Sans', 'Liberation Sans'],
+    'font.size': 12,
+    'axes.titlesize': 16,
+    'axes.labelsize': 14,
+    'xtick.labelsize': 12,
+    'ytick.labelsize': 12,
+    'legend.fontsize': 12,
+    'figure.titlesize': 18
+})
 
 # Function to load and preprocess season data
 def load_season_data(file_path, season_name):
@@ -65,7 +86,8 @@ def plot_kpi_by_parcel_season_age(data, kpi):
     
     # Create a figure with subplots for each parcel
     n_parcels = len(parcels)
-    fig, axes = plt.subplots(n_parcels, 1, figsize=(12, n_parcels * 4), sharex=True)
+    fig, axes = plt.subplots(n_parcels, 1, figsize=(12, n_parcels * 4), sharex=True, dpi=100)
+    fig.suptitle(f'{kpi} by Parcel and Tree Age', fontsize=18, y=0.92)
     
     # If only one parcel, axes is not an array
     if n_parcels == 1:
@@ -75,65 +97,53 @@ def plot_kpi_by_parcel_season_age(data, kpi):
         ax = axes[i]
         parcel_data = grouped[grouped['Parcelle'] == parcel]
         
-        # Plot each season
+        # Plot each season with custom colors
         for season in ['2023-2024', '2024-2025']:
             season_data = parcel_data[parcel_data['Season'] == season]
             if not season_data.empty:
                 ax.plot(season_data['Age'], season_data[kpi], marker='o', 
-                        linestyle='-', label=f'Season {season}')
+                        linestyle='-', linewidth=2.5, 
+                        color=season_colors[season], 
+                        label=f'Season {season}')
         
         # Add ramp-up target for 'Production au plant (g)' KPI
         if kpi == 'Production au plant (g)' and not rampup.empty:
             ax.plot(rampup['Age'], rampup[kpi], marker='x', linestyle='--', 
-                   color='red', label='Target Ramp-up')
+                   linewidth=2, color=season_colors['Target'], 
+                   label='Target Ramp-up')
         
-        ax.set_title(f'Parcel {parcel} - {kpi}')
-        ax.set_xlabel('Age (years)')
-        ax.set_ylabel(kpi)
-        ax.legend()
+        ax.set_title(f'Parcel {parcel}', fontweight='bold')
+        ax.set_xlabel('Age (years)', fontweight='bold')
+        ax.set_ylabel(kpi, fontweight='bold')
+        ax.legend(loc='best', frameon=True, facecolor='white', framealpha=0.9)
         ax.grid(True, alpha=0.3)
         
         # Use integer ticks for Age
         ax.xaxis.set_major_locator(MaxNLocator(integer=True))
         
-        # Add data points annotations
+        # Add a light background color
+        ax.set_facecolor('#f8f9fa')
+        
+        # Add data points annotations with improved styling
         for idx, row in season_data.iterrows():
             ax.annotate(f"{row[kpi]:.2f}", 
                      (row['Age'], row[kpi]),
                      textcoords="offset points",
-                     xytext=(0, 5),
-                     ha='center')
+                     xytext=(0, 7),
+                     ha='center',
+                     fontsize=10,
+                     bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="gray", alpha=0.8))
     
     plt.tight_layout()
     plt.savefig(f'plots/{kpi.replace(" ", "_").replace("(", "").replace(")", "").replace("%", "percent")}.png')
     plt.close()
 
-# Alternative visualization: Create heatmaps for KPIs by age and parcel for each season
-def plot_kpi_heatmaps(data, kpi):
-    for season in ['2023-2024', '2024-2025']:
-        season_data = data[data['Season'] == season]
-        
-        # Pivot data to create a matrix suitable for heatmap
-        pivot_data = season_data.pivot_table(
-            index='Parcelle', 
-            columns='Age',
-            values=kpi,
-            aggfunc='mean')
-        
-        plt.figure(figsize=(12, 8))
-        sns.heatmap(pivot_data, annot=True, cmap='viridis', fmt='.2f', linewidths=.5)
-        plt.title(f'{kpi} by Parcel and Age - Season {season}')
-        plt.ylabel('Parcel')
-        plt.xlabel('Age (years)')
-        plt.tight_layout()
-        plt.savefig(f'plots/heatmap_{season}_{kpi.replace(" ", "_").replace("(", "").replace(")", "").replace("%", "percent")}.png')
-        plt.close()
+# Function removed as per requirements
 
 # Create plots for each KPI
 for kpi in kpis:
     print(f"Plotting {kpi}...")
     plot_kpi_by_parcel_season_age(combined_data, kpi)
-    plot_kpi_heatmaps(combined_data, kpi)
 
 # Create a summary plot for Production au plant by Age, comparing all parcels against target
 def plot_production_summary(data):
@@ -143,48 +153,64 @@ def plot_production_summary(data):
     avg_by_age = data.groupby(['Age'])[kpi].mean().reset_index()
     avg_by_age_season = data.groupby(['Age', 'Season'])[kpi].mean().reset_index()
     
-    plt.figure(figsize=(14, 8))
+    plt.figure(figsize=(14, 10), dpi=100)
+    
+    # Create a light color background
+    ax = plt.gca()
+    ax.set_facecolor('#f8f9fa')
     
     # Plot average by age
     plt.plot(avg_by_age['Age'], avg_by_age[kpi], 
-             marker='o', linestyle='-', linewidth=2, 
-             color='blue', label='Average all parcels')
+             marker='o', markersize=10, linestyle='-', linewidth=3, 
+             color='#2c3e50', label='Average all parcels')
     
-    # Plot average by age and season
+    # Plot average by age and season with custom colors
     for season in ['2023-2024', '2024-2025']:
         season_data = avg_by_age_season[avg_by_age_season['Season'] == season]
         plt.plot(season_data['Age'], season_data[kpi], 
-                 marker='o', linestyle='--', 
+                 marker='o', markersize=8, linestyle='--', linewidth=2.5,
+                 color=season_colors[season],
                  label=f'Season {season}')
     
     # Plot ramp-up target
     plt.plot(rampup['Age'], rampup[kpi], 
-             marker='x', linestyle='-.', linewidth=2, 
-             color='red', label='Target Ramp-up')
+             marker='x', markersize=10, linestyle='-.', linewidth=2.5, 
+             color=season_colors['Target'], label='Target Ramp-up')
     
-    plt.title('Average Production per Plant by Age vs Target')
-    plt.xlabel('Age (years)')
-    plt.ylabel(kpi)
-    plt.legend()
+    plt.title('Average Production per Plant by Age vs Target', fontweight='bold', pad=20)
+    plt.xlabel('Age (years)', fontweight='bold', labelpad=10)
+    plt.ylabel(kpi, fontweight='bold', labelpad=10)
+    plt.legend(loc='upper left', frameon=True, facecolor='white', framealpha=0.9, fontsize=12)
     plt.grid(True, alpha=0.3)
     plt.gca().xaxis.set_major_locator(MaxNLocator(integer=True))
     
-    # Add annotations
+    # Add a border around the plot
+    for spine in plt.gca().spines.values():
+        spine.set_visible(True)
+        spine.set_color('#cccccc')
+    
+    # Add annotations with improved styling
     for _, row in avg_by_age.iterrows():
         plt.annotate(f"{row[kpi]:.2f}", 
                  (row['Age'], row[kpi]),
                  textcoords="offset points",
-                 xytext=(0, 5),
-                 ha='center')
+                 xytext=(0, 10),
+                 ha='center',
+                 fontsize=11,
+                 fontweight='bold',
+                 bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="gray", alpha=0.8))
     
     # Add annotations for ramp-up target
     for _, row in rampup.iterrows():
         plt.annotate(f"{row[kpi]:.1f}", 
                  (row['Age'], row[kpi]),
                  textcoords="offset points",
-                 xytext=(0, -15),
+                 xytext=(0, -20),
                  ha='center',
-                 color='red')
+                 fontsize=11,
+                 fontweight='bold',
+                 color=season_colors['Target'],
+                 bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="lightgray", alpha=0.8))
     
     plt.tight_layout()
     plt.savefig('plots/production_summary.png')
@@ -200,7 +226,25 @@ def plot_species_comparison(data):
     # Get unique species
     species = sorted(data['Espèce'].unique())
     
-    plt.figure(figsize=(14, 8))
+    # Get all unique species and create a color map dynamically
+    species_colors = {}
+    color_sets = [
+        ['#3498db', '#9b59b6'],  # Blue, Purple for 2023-2024 and 2024-2025
+        ['#2ecc71', '#f1c40f'],  # Green, Yellow for 2023-2024 and 2024-2025
+        ['#e74c3c', '#8e44ad'],  # Red, Purple for 2023-2024 and 2024-2025
+        ['#f39c12', '#16a085'],  # Orange, Teal for 2023-2024 and 2024-2025
+        ['#2980b9', '#c0392b']   # Dark Blue, Dark Red for 2023-2024 and 2024-2025
+    ]
+    
+    for i, specie in enumerate(species):
+        # Cycle through color sets if there are more species than color sets
+        species_colors[specie] = color_sets[i % len(color_sets)]
+    
+    plt.figure(figsize=(14, 10), dpi=100)
+    
+    # Create a light color background
+    ax = plt.gca()
+    ax.set_facecolor('#f8f9fa')
     
     for i, specie in enumerate(species):
         specie_data = grouped[grouped['Espèce'] == specie]
@@ -208,17 +252,32 @@ def plot_species_comparison(data):
         for j, season in enumerate(['2023-2024', '2024-2025']):
             season_data = specie_data[specie_data['Season'] == season]
             if not season_data.empty:
-                plt.plot(season_data['Age'], season_data[kpi], 
-                        marker='o', linestyle=['-', '--'][j], 
-                        color=plt.cm.tab10(i), 
+                line = plt.plot(season_data['Age'], season_data[kpi], 
+                        marker='o', markersize=8, linestyle=['-', '--'][j], linewidth=2.5,
+                        color=species_colors[specie][j], 
                         label=f'{specie} - {season}')
+                
+                # Add annotations
+                for _, row in season_data.iterrows():
+                    plt.annotate(f"{row[kpi]:.2f}", 
+                             (row['Age'], row[kpi]),
+                             textcoords="offset points",
+                             xytext=(0, 8),
+                             ha='center',
+                             fontsize=9,
+                             bbox=dict(boxstyle="round,pad=0.2", fc="white", ec="gray", alpha=0.7))
     
-    plt.title('Productivity Rate by Species, Age and Season')
-    plt.xlabel('Age (years)')
-    plt.ylabel(kpi)
-    plt.legend()
+    plt.title('Productivity Rate by Species, Age and Season', fontweight='bold', pad=20)
+    plt.xlabel('Age (years)', fontweight='bold', labelpad=10)
+    plt.ylabel(kpi, fontweight='bold', labelpad=10)
+    plt.legend(loc='upper left', frameon=True, facecolor='white', framealpha=0.9)
     plt.grid(True, alpha=0.3)
     plt.gca().xaxis.set_major_locator(MaxNLocator(integer=True))
+    
+    # Add a border around the plot
+    for spine in plt.gca().spines.values():
+        spine.set_visible(True)
+        spine.set_color('#cccccc')
     plt.tight_layout()
     plt.savefig('plots/species_productivity_comparison.png')
     plt.close()
