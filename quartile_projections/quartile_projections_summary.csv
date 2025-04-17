@@ -1,31 +1,25 @@
-KPI;Quartile;Projected_Value_2025_2026
-Plants Productifs;All Parcels;20.843387158785085
-Plants Productifs;Q1 (0-25%);3.278627450980392
-Plants Productifs;Q2 (25-50%);7.888888888888889
-Plants Productifs;Q3 (50-75%);26.638888888888886
-Plants Productifs;Q4 (75-100%);49.95833333333333
-Taux de Productivité (%);All Parcels;3.132563052672049
-Taux de Productivité (%);Q1 (0-25%);0.5759333333333333
-Taux de Productivité (%);Q2 (25-50%);1.8290277777777777
-Taux de Productivité (%);Q3 (50-75%);3.888541666666667
-Taux de Productivité (%);Q4 (75-100%);6.875906862745098
-Poids produit (g);All Parcels;1135.6128219915418
-Poids produit (g);Q1 (0-25%);155.69666666666666
-Poids produit (g);Q2 (25-50%);506.62254901960785
-Poids produit (g);Q3 (50-75%);1324.125
-Poids produit (g);Q4 (75-100%);2800.9861111111113
-Nombre de truffe;All Parcels;33.36468665897732
-Nombre de truffe;Q1 (0-25%);5.436666666666667
-Nombre de truffe;Q2 (25-50%);14.712418300653596
-Nombre de truffe;Q3 (50-75%);42.91666666666667
-Nombre de truffe;Q4 (75-100%);77.375
-Poids moyen (g);All Parcels;18.252638023836983
-Poids moyen (g);Q1 (0-25%);10.616413725490197
-Poids moyen (g);Q2 (25-50%);14.613749999999998
-Poids moyen (g);Q3 (50-75%);18.794444444444444
-Poids moyen (g);Q4 (75-100%);30.894999999999996
-Production au plant (g);All Parcels;1.9424978854286814
-Production au plant (g);Q1 (0-25%);0.21196666666666666
-Production au plant (g);Q2 (25-50%);0.8426388888888888
-Production au plant (g);Q3 (50-75%);2.116458333333333
-Production au plant (g);Q4 (75-100%);5.03156045751634
+KPI;Tertile;Parcels;Projected_Value_2025_2026
+Plants Productifs;All Parcels;All;20.843387158785085
+Plants Productifs;T1 (0-33%);C, D1, D2, F, H, K;3.7321895424836597
+Plants Productifs;T2 (33-67%);A1, E1, E2, G, J;14.277777777777779
+Plants Productifs;T3 (67-100%);A2, B1, B2, I, L, LP;43.42592592592593
+Taux de Productivité (%);All Parcels;All;3.132563052672049
+Taux de Productivité (%);T1 (0-33%);C, D1, D2, F, H, K;0.7277222222222222
+Taux de Productivité (%);T2 (33-67%);A1, E1, E2, G, J;2.1920555555555556
+Taux de Productivité (%);T3 (67-100%);A2, B1, B2, I, L, LP;6.321160130718955
+Poids produit (g);All Parcels;All;1135.6128219915418
+Poids produit (g);T1 (0-33%);C, D1, D2, F, H, K;171.74722222222226
+Poids produit (g);T2 (33-67%);A1, E1, E2, G, J;805.464705882353
+Poids produit (g);T3 (67-100%);A2, B1, B2, I, L, LP;2374.601851851852
+Nombre de truffe;All Parcels;All;33.36468665897732
+Nombre de truffe;T1 (0-33%);C, D1, D2, F, H, K;6.113888888888889
+Nombre de truffe;T2 (33-67%);A1, E1, E2, G, J;23.969934640522876
+Nombre de truffe;T3 (67-100%);A2, B1, B2, I, L, LP;68.44444444444446
+Poids moyen (g);All Parcels;All;18.252638023836983
+Poids moyen (g);T1 (0-33%);C, D1, D2, F, H, K;11.819233660130719
+Poids moyen (g);T2 (33-67%);A1, E1, E2, G, J;11.808888888888891
+Poids moyen (g);T3 (67-100%);A2, B1, B2, I, L, LP;30.05583333333334
+Production au plant (g);All Parcels;All;1.9424978854286812
+Production au plant (g);T1 (0-33%);C, D1, D2, F, H, K;0.26663888888888887
+Production au plant (g);T2 (33-67%);A1, E1, E2, G, J;1.2246111111111109
+Production au plant (g);T3 (67-100%);A2, B1, B2, I, L, LP;4.216595860566448

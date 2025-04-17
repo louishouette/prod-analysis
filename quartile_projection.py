@@ -20,13 +20,18 @@ plt.rcParams.update({
     'legend.fontsize': 12
 })
 
-# Custom color palette for quartiles
+# Custom color palette for tertiles (3 groups)
 quartile_colors = {
-    'Q1 (0-25%)': '#3498db',    # Blue
-    'Q2 (25-50%)': '#2ecc71',   # Green
-    'Q3 (50-75%)': '#f39c12',   # Orange
-    'Q4 (75-100%)': '#e74c3c',  # Red
+    'T1 (0-33%)': '#3498db',    # Blue
+    'T2 (33-67%)': '#2ecc71',   # Green
+    'T3 (67-100%)': '#e74c3c',  # Red
     'All Parcels': '#9b59b6'     # Purple
+}
+
+# Line styles
+line_styles = {
+    'All Parcels': {'linewidth': 3.5, 'linestyle': '-'},  # Thicker line for average
+    'other': {'linewidth': 2, 'linestyle': '-'}  # Regular line for tertiles
 }
 
 # Function to load and preprocess season data
@@ -74,52 +79,32 @@ kpis = [
 if not os.path.exists('quartile_projections'):
     os.makedirs('quartile_projections')
 
-# Linear function for trendline fitting (simpler for 2 data points)
+# Simple linear function for trendline fitting
 def linear_func(x, a, b):
     return a * x + b
 
-# Function to fit a linear trend and predict next value (more appropriate for 2 data points)
+# Function to fit a simple linear trend and predict next value
 def fit_trend_curve(x_data, y_data, predict_x):
     try:
-        # With only 2 data points, we can do a simple projection
+        # With only 2 data points, use a direct linear projection
         if len(x_data) == 2 and len(y_data) == 2:
-            # Calculate growth rate between the two points
-            growth_rate = (y_data[1] - y_data[0]) / (x_data[1] - x_data[0])
+            # Calculate slope and intercept directly
+            slope = (y_data[1] - y_data[0]) / (x_data[1] - x_data[0]) if x_data[1] != x_data[0] else 0
+            intercept = y_data[0] - slope * x_data[0]
             
-            # Use a modified logarithmic growth to avoid unrealistic projections
-            # for large growth rates - this assumes growth will slow down
-            if growth_rate > 0:
-                # Calculate projected value using diminishing growth
-                base_projection = y_data[1] + growth_rate
-                predicted_y = y_data[1] + growth_rate * (np.log((predict_x - x_data[1]) + 1) / np.log(2))
-            else:
-                # For negative growth, continue the trend linearly
-                predicted_y = y_data[1] + growth_rate
+            # Calculate projected value using simple linear extrapolation
+            predicted_y = slope * predict_x + intercept
             
             # Generate values for trendline plotting
             x_range = np.linspace(min(x_data), predict_x, 100)
-            
-            # Create a smooth transition curve between last known point and projection
-            y_range = []
-            for xi in x_range:
-                if xi <= x_data[1]:
-                    # Linear between known points
-                    ratio = (xi - x_data[0]) / (x_data[1] - x_data[0]) if x_data[1] != x_data[0] else 0
-                    yi = y_data[0] + ratio * (y_data[1] - y_data[0])
-                else:
-                    # Modified logarithmic growth after last known point
-                    if growth_rate > 0:
-                        yi = y_data[1] + growth_rate * (np.log((xi - x_data[1]) + 1) / np.log(2))
-                    else:
-                        yi = y_data[1] + growth_rate * (xi - x_data[1])
-                y_range.append(yi)
+            y_range = slope * x_range + intercept
             
             # Ensure predicted value is non-negative
             predicted_y = max(0, predicted_y)
             
-            return predicted_y, x_range, np.array(y_range), None
+            return predicted_y, x_range, y_range, (slope, intercept)
         else:
-            # Use linear function if we have more data points in the future
+            # Use curve_fit for more than 2 points (future-proofing)
             params, _ = optimize.curve_fit(linear_func, x_data, y_data)
             predicted_y = linear_func(predict_x, *params)
             x_range = np.linspace(min(x_data), predict_x, 100)
@@ -129,18 +114,22 @@ def fit_trend_curve(x_data, y_data, predict_x):
         print(f"Warning: Could not fit trend curve: {e}")
         return None, None, None, None
 
+# Global variable to track parcel tertile assignments
+parcel_tertile_map = {}
+
 # Function to plot KPI by quartiles with trend projection
 def plot_kpi_by_quartiles(kpi):
     print(f"Processing {kpi}...")
+    
+    global parcel_tertile_map
+    # Clear the map for this KPI
+    parcel_tertile_map = {}
     
     # Step 1: Calculate quartiles for each season based on the KPI
     quartile_data = []
     
     # Get all parcels for consistent assignment
     all_parcels = sorted(combined_data['Parcelle'].unique())
-    
-    # Create a tracking dictionary for quartile assignment consistency across seasons
-    parcel_quartile_map = {}
     
     # First, get the quartile assignments from the most recent season
     recent_season = '2024-2025'
@@ -154,31 +143,31 @@ def plot_kpi_by_quartiles(kpi):
             # Filter out NaN values for quartile calculation
             valid_avg = recent_avg[recent_avg[kpi].notna()]
             
-            if len(valid_avg) >= 4:  # Need at least 4 data points for quartiles
-                quartiles = valid_avg[kpi].quantile([0.25, 0.5, 0.75]).values
+            if len(valid_avg) >= 3:  # Need at least 3 data points for tertiles
+                tertiles = valid_avg[kpi].quantile([0.33, 0.67]).values
                 
-                # Assign quartile groups to parcels
+                # Assign tertile groups to parcels
                 recent_avg['Quartile'] = pd.cut(
                     recent_avg[kpi], 
-                    bins=[-float('inf'), quartiles[0], quartiles[1], quartiles[2], float('inf')],
-                    labels=['Q1 (0-25%)', 'Q2 (25-50%)', 'Q3 (50-75%)', 'Q4 (75-100%)']
+                    bins=[-float('inf'), tertiles[0], tertiles[1], float('inf')],
+                    labels=['T1 (0-33%)', 'T2 (33-67%)', 'T3 (67-100%)']
                 )
                 
-                # Store the quartile assignments
+                # Store the tertile assignments
                 for _, row in recent_avg.iterrows():
                     if pd.notna(row['Quartile']):
-                        parcel_quartile_map[row['Parcelle']] = row['Quartile']
+                        parcel_tertile_map[row['Parcelle']] = row['Quartile']
             else:
                 # If fewer than 4 data points, assign evenly
                 values = valid_avg[kpi].values
                 sorted_indices = np.argsort(values)
-                quartile_labels = ['Q1 (0-25%)', 'Q2 (25-50%)', 'Q3 (50-75%)', 'Q4 (75-100%)']
+                tertile_labels = ['T1 (0-33%)', 'T2 (33-67%)', 'T3 (67-100%)']
                 
                 n = len(valid_avg)
                 for i, idx in enumerate(sorted_indices):
-                    quartile_idx = min(3, int(4 * i / n))
+                    tertile_idx = min(2, int(3 * i / n))
                     parcel = valid_avg.iloc[idx]['Parcelle']
-                    parcel_quartile_map[parcel] = quartile_labels[quartile_idx]
+                    parcel_tertile_map[parcel] = tertile_labels[tertile_idx]
     
     # Now process each season with consistent quartile assignments
     for season in ['2023-2024', '2024-2025']:
@@ -191,11 +180,11 @@ def plot_kpi_by_quartiles(kpi):
         if parcel_avg.empty:
             continue
             
-        # Assign quartiles based on the mapping we created
-        parcel_avg['Quartile'] = parcel_avg['Parcelle'].map(parcel_quartile_map)
+        # Assign tertiles based on the mapping we created
+        parcel_avg['Quartile'] = parcel_avg['Parcelle'].map(parcel_tertile_map)
         
-        # For parcels without a quartile assignment (e.g., new parcels), use median
-        parcel_avg['Quartile'].fillna('Q2 (25-50%)', inplace=True)
+        # For parcels without a tertile assignment (e.g., new parcels), use middle tertile
+        parcel_avg['Quartile'].fillna('T2 (33-67%)', inplace=True)
         
         # Add season column
         parcel_avg['Season'] = season
@@ -270,9 +259,35 @@ def plot_kpi_by_quartiles(kpi):
         if len(x) < 2 or np.isnan(y).any():
             continue
         
-        # Plot actual data points
-        plt.plot(x, y, 'o-', label=quartile, color=quartile_colors.get(quartile, 'gray'), 
-                 linewidth=2, markersize=8)
+        # Create label with parcels list
+        parcels_in_quartile = [p for p, q in parcel_tertile_map.items() if q == quartile]
+        parcels_str = ', '.join(sorted(parcels_in_quartile))
+        if quartile == 'All Parcels':
+            label = 'All Parcels'
+        else:
+            # Truncate if too many parcels to display
+            if len(parcels_str) > 30:
+                parcels_display = ', '.join(sorted(parcels_in_quartile)[:3]) + '...'
+            else:
+                parcels_display = parcels_str
+            label = f'{quartile} ({parcels_display})'
+            
+        # Set line style based on whether it's All Parcels or a tertile
+        line_style = line_styles['All Parcels'] if quartile == 'All Parcels' else line_styles['other']
+            
+        # Plot actual data points with different line styles
+        plt.plot(x, y, 'o-', label=label, color=quartile_colors.get(quartile, 'gray'),
+                 linewidth=line_style['linewidth'], linestyle=line_style['linestyle'], markersize=8)
+        
+        # Add annotations to all points
+        for i in range(len(x)):
+            plt.annotate(f'{y[i]:.1f}', 
+                     (x[i], y[i]),
+                     textcoords="offset points",
+                     xytext=(0, 10),
+                     ha='center',
+                     fontsize=9,
+                     bbox=dict(boxstyle="round,pad=0.2", fc="white", ec="gray", alpha=0.7))
         
         # Fit trend curve and project next season
         predicted_y, x_curve, y_curve, params = fit_trend_curve(x, y, 3)  # 3 represents the third season
@@ -285,14 +300,14 @@ def plot_kpi_by_quartiles(kpi):
             plt.plot(3, predicted_y, 'o', color=quartile_colors.get(quartile, 'gray'), 
                      markersize=10, markerfacecolor='white')
             
-            # Add value label to projected point
+            # Add annotation for the projected point
             plt.annotate(f'{predicted_y:.1f}', 
-                      (3, predicted_y),
-                      textcoords="offset points",
-                      xytext=(0, 10),
-                      ha='center',
-                      fontsize=10,
-                      bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="gray", alpha=0.7))
+                     (3, predicted_y),
+                     textcoords="offset points",
+                     xytext=(0, 10),
+                     ha='center',
+                     fontsize=9,
+                     bbox=dict(boxstyle="round,pad=0.2", fc="white", ec="gray", alpha=0.7))
             
             # Store projection for later use
             projections.append({'Quartile': quartile, 'Projected_Value': predicted_y})
@@ -318,8 +333,8 @@ def plot_kpi_by_quartiles(kpi):
     plt.text(3, plt.gca().get_ylim()[0] + (plt.gca().get_ylim()[1] - plt.gca().get_ylim()[0])*0.05, 
              'PROJECTED', ha='center', fontsize=10, fontstyle='italic', alpha=0.7)
     
-    # Add legend
-    plt.legend(title='Parcel Quartiles', loc='best')
+    # Add legend with a smaller font to fit longer parcel lists
+    plt.legend(title='Parcel Tertiles', loc='best', fontsize=9)
     
     plt.tight_layout()
     
@@ -338,13 +353,19 @@ for kpi in kpis:
 
 # Create a summary dataframe of all projections
 def create_projection_summary():
+    global parcel_tertile_map
     summary_rows = []
     
     for kpi, projections in projection_summary.items():
         for p in projections:
+            # Get parcels in this tertile for the summary
+            parcels_in_quartile = [parcel for parcel, q in parcel_tertile_map.items() if q == p['Quartile']]
+            parcels_str = ', '.join(sorted(parcels_in_quartile)) if p['Quartile'] != 'All Parcels' else 'All'
+            
             summary_rows.append({
                 'KPI': kpi,
-                'Quartile': p['Quartile'],
+                'Tertile': p['Quartile'],
+                'Parcels': parcels_str,
                 'Projected_Value_2025_2026': p['Projected_Value']
             })
     
