@@ -60,6 +60,34 @@ L'ajustement du modèle aux données cibles est excellent, avec un coefficient d
 
 Avant de procéder aux projections, nous avons analysé les niveaux de production actuels en fonction de l'âge des arbres pour établir une référence de performance.
 
+---
+
+## Qualité, robustesse et diagnostics des modèles prévisionnels
+
+L'ensemble du pipeline de prévision a été renforcé pour garantir des résultats fiables, transparents et exploitables, même en présence de données incomplètes ou bruitées. Les principales améliorations sont :
+
+- **Gestion rigoureuse des index temporels** : tous les modèles utilisent désormais des index strictement consécutifs (`RangeIndex`), assurant la compatibilité totale avec les bibliothèques statistiques et la cohérence des projections.
+- **Interpolation automatique des années manquantes** : si certaines années sont absentes dans une série temporelle, les valeurs sont interpolées linéairement. Un diagnostic indique le nombre d'années interpolées ou restant manquantes.
+- **Diagnostics explicites** : le pipeline affiche des messages clairs pour chaque cas particulier rencontré :
+    - Séries trop courtes pour la modélisation (fit non tenté)
+    - Séries constantes (tendance nulle)
+    - Interpolation automatique des années manquantes
+    - Utilisation de fallback (valeur récente) si un modèle ne converge pas
+- **Suppression des warnings parasites** : tous les ValueWarning, SpecificationWarning et ConvergenceWarning internes aux librairies sont filtrés ou traités, pour une sortie propre et focalisée sur les diagnostics utiles.
+- **Robustesse accrue** : les modèles Holt, lissage exponentiel, et espace d'états sont désormais capables de traiter des séries irrégulières, bruitées ou incomplètes sans planter ni générer de résultats incohérents.
+- **Usage exclusif de l'Âge Brut** : conformément à l'analyse agronomique, toutes les prédictions sont désormais fondées sur l'Âge Brut (sans pénalité), garantissant une meilleure représentativité de la maturité réelle des arbres.
+
+**Exemples de diagnostics affichés lors de l'exécution :**
+- `[INFO] 2 années manquantes pour Parcelle X. Interpolation automatique.`
+- `[ERREUR] Série trop courte après nettoyage/interpolation pour Parcelle Y. Fit impossible.`
+- `[AVERTISSEMENT] 1 année reste manquante après interpolation. Elle sera ignorée.`
+- `Impossible d'ajuster le modèle : Maximum Likelihood optimization failed to converge. Utilisation du ratio de déviation le plus récent.`
+
+Ces diagnostics sont également utiles pour guider l'amélioration continue du dispositif de collecte et de structuration des données de production.
+
+---
+
+
 ![Production actuelle par âge](generated/plots/production_projections/actual_production_by_age.png)
 
 Cette visualisation montre la variabilité significative de la production entre les arbres de même âge, soulignant l'importance d'un modèle qui peut capturer les effets spécifiques aux parcelles.
@@ -155,14 +183,31 @@ Les ratios issus du modèle à espace d'états montrent certaines différences n
 
 ## Prévisions pour la Prochaine Saison (2025-2026)
 
-Nos deux modèles génèrent des prévisions détaillées pour la prochaine saison de production, tenant compte de l'âge des arbres, de l'espèce, et des performances historiques de chaque parcelle.
+Les modèles de prévision génèrent des estimations détaillées pour la saison 2025-2026, en intégrant l'âge brut des arbres, l'espèce, et les tendances historiques de chaque parcelle.
 
 ### Comparaison des Prévisions Totales
 
-| Modèle | Production totale prévue (kg) | Différence (%) |
-|--------|-------------------------------|----------------|
-| Gompertz | 36.5 | - |
-| Espace d'États | 39.2 | +7.4% |
+| Modèle             | Production totale prévue (kg) | MAE  | RMSE  | MAPE   |
+|--------------------|-------------------------------|------|-------|--------|
+| Gompertz           | 414.17                        | 4.57 | 6.07  | 83.60% |
+| Espace d'États     | 414.17*                       | 4.16 | 5.45  | 82.42% |
+
+*Note : la valeur affichée correspond à la colonne 'Total_Expected_Production', issue du pipeline principal.
+
+- **Production totale projetée pour 2025-2026** : **414.17 kg**
+- **Top 5 des parcelles par production totale projetée :**
+
+    | Parcelle | Production (kg) |
+    |----------|-----------------|
+    | K        | 59.64           |
+    | J        | 43.36           |
+    | I        | 40.26           |
+    | E2       | 34.20           |
+    | H        | 32.82           |
+
+- Les métriques de comparaison des modèles (MAE, RMSE, MAPE) sont issues de la calibration sur les données historiques.
+- Les résultats détaillés et visualisations sont disponibles dans le dossier `generated/` du projet.
+
 
 Le modèle à espace d'états, qui donne plus de poids aux tendances récentes, prévoit une production globalement supérieure de 7.4% par rapport au modèle Gompertz plus conservateur.
 

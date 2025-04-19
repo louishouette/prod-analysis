@@ -66,14 +66,35 @@ def build_state_space_model(data, rampup_data, gamma_fixed, A_fixed, beta_fixed)
             
         # Création d'un modèle pour la déviation logarithmique avec composante de niveau local
         try:
-            model = UnobservedComponents(
-                combo_data['Log_Deviation'], 
-                level='local level', 
-                stochastic_level=True
-            )
-            
-            # Ajustement du modèle
-            model_fit = model.fit(disp=False)
+            # Préparer une série avec RangeIndex strictement consécutif
+            # Agréger par année pour garantir l'unicité de l'index
+            logdev = combo_data.groupby('Year')['Log_Deviation'].mean()
+            if logdev.index.duplicated().any():
+                print(f"    [ERREUR] Doublons persistants dans l'index année pour {parcel}-{species}, impossible de réindexer.")
+            years = logdev.index.values
+            if len(years) > 1:
+                full_range = pd.RangeIndex(start=years[0], stop=years[-1]+1)
+                logdev = logdev.reindex(full_range)
+                n_missing = logdev.isna().sum()
+                if n_missing > 0:
+                    print(f"    [INFO] {n_missing} années manquantes pour {parcel}-{species}. Interpolation automatique.")
+                    logdev = logdev.interpolate(method='linear')
+                    still_missing = logdev.isna().sum()
+                    if still_missing > 0:
+                        print(f"    [AVERTISSEMENT] {still_missing} années restent manquantes après interpolation. Elles seront ignorées.")
+                    logdev = logdev[~logdev.isna()]
+            if logdev.empty or len(logdev) < 2:
+                print(f"    [ERREUR] Série trop courte après nettoyage/interpolation pour {parcel}-{species}. Fit impossible.")
+                model_fit = None
+            else:
+                import warnings
+                warnings.filterwarnings("ignore", category=UserWarning, module='statsmodels.base.model')  # Masque les ConvergenceWarning
+                model = UnobservedComponents(
+                    logdev,
+                    level='local level'
+                )
+                # Ajustement du modèle
+                model_fit = model.fit(disp=False)
             
             # Stockage du modèle ajusté
             parcel_species_models[(parcel, species)] = model_fit

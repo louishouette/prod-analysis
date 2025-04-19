@@ -29,17 +29,35 @@ def build_holts_trend_model(data, alpha=None, beta=None, exponential=False):
     # Préparer les données pour l'analyse des séries temporelles
     time_series = prepare_time_series_data(data)
     
+    import pandas as pd
+    if not pd.api.types.is_integer_dtype(time_series.index):
+        try:
+            time_series.index = time_series.index.astype(int)
+        except Exception:
+            print("[AVERTISSEMENT] L'index de la série temporelle n'est pas convertible en années (int). Prévisions non fiables.")
+    if time_series.empty or len(time_series) < 2:
+        print("Erreur: Pas assez de données pour construire un modèle de Holt")
+        return None, time_series
+    
     # Créer et ajuster le modèle
     model = Holt(time_series['Production au plant (g)'], exponential=exponential)
     
     if alpha is None or beta is None:
         # Optimisation automatique des paramètres
-        results = model.fit(optimized=True, use_brute=True)
-        print(f"Paramètres optimisés: alpha={results.params['smoothing_level']:.4f}, beta={results.params['smoothing_trend']:.4f}")
+        try:
+            results = model.fit(optimized=True, use_brute=True)
+            print(f"Paramètres optimisés: alpha={results.params['smoothing_level']:.4f}, beta={results.params['smoothing_trend']:.4f}")
+        except Exception as e:
+            print(f"Erreur lors de la construction du modèle de Holt: {e}")
+            return None, time_series
     else:
         # Utilisation des paramètres fournis
-        results = model.fit(smoothing_level=alpha, smoothing_trend=beta)
-        print(f"Paramètres utilisés: alpha={alpha:.4f}, beta={beta:.4f}")
+        try:
+            results = model.fit(smoothing_level=alpha, smoothing_trend=beta)
+            print(f"Paramètres utilisés: alpha={alpha:.4f}, beta={beta:.4f}")
+        except Exception as e:
+            print(f"Erreur lors de la construction du modèle de Holt: {e}")
+            return None, time_series
     
     # Afficher les métriques de qualité d'ajustement
     mse = ((results.fittedvalues - time_series['Production au plant (g)']) ** 2).mean()
@@ -68,14 +86,19 @@ def project_holts_trend(model_results, time_series, forecast_periods=3):
     ---------
     DataFrame avec les valeurs historiques et les prévisions
     """
+    # S'assurer que l'index est bien d'entiers (année)
+    import pandas as pd
+    if not pd.api.types.is_integer_dtype(time_series.index):
+        try:
+            time_series.index = time_series.index.astype(int)
+        except Exception:
+            print("[AVERTISSEMENT] L'index de la série temporelle n'est pas convertible en années (int). Prévisions non fiables.")
     # Faire les prévisions
     forecast = model_results.forecast(steps=forecast_periods)
-    
-    # Créer un DataFrame pour les prévisions
-    last_year = time_series.index[-1]
+    # Créer un DataFrame pour les prévisions avec un index d'entiers
+    last_year = int(time_series.index[-1])
     forecast_years = range(last_year + 1, last_year + forecast_periods + 1)
-    forecast_index = pd.Index(forecast_years, name='Year')
-    
+    forecast_index = pd.Index(forecast_years, dtype=int, name='Year')
     forecast_df = pd.DataFrame({
         'Production au plant (g)': forecast,
         'Type': 'Forecast'
@@ -122,44 +145,57 @@ def holts_method_by_parcel(data, forecast_periods=2, exponential=False):
         print(f"\n  Analyse de {parcel}-{species}:")
             
         # Créer une série temporelle pour cette parcelle-espèce
-        ts = group_data.groupby(['Saison'])['Production au plant (g)'].mean().reset_index()
+        ts = group_data.groupby('Saison')['Production au plant (g)'].mean().reset_index()
         ts['Year'] = ts['Saison'].str.split(' - ').str[0].astype(int)
         ts = ts.sort_values('Year')
         ts.set_index('Year', inplace=True)
+        ts = ts[~ts['Production au plant (g)'].isna()]
+        
+        import pandas as pd
+        if not pd.api.types.is_integer_dtype(ts.index):
+            try:
+                ts.index = ts.index.astype(int)
+            except Exception:
+                print(f"[AVERTISSEMENT] Parcelle {parcel}, Espèce {species} : index non convertible en années (int). Prévisions non fiables.")
+        if len(ts) < 3:
+            print(f"[AVERTISSEMENT] Parcelle {parcel} : série trop courte pour modélisation (moins de 3 points).")
+            continue
+        if ts['Production au plant (g)'].nunique() == 1:
+            print(f"[AVERTISSEMENT] Parcelle {parcel} : série constante (pas de variation de production).")
+            continue
         
         # S'il y a assez de points pour la méthode de Holt
-        if len(ts) >= 3:  # Holt nécessite au moins 3 points pour une tendance fiable
-            try:
-                # Ajuster le modèle
-                model = Holt(ts['Production au plant (g)'], exponential=exponential)
+        try:
+            # Ajuster le modèle
+            model = Holt(ts['Production au plant (g)'], exponential=exponential)
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", category=RuntimeWarning)
+                warnings.simplefilter("ignore", category=ConvergenceWarning)
                 res = model.fit(optimized=True)
-                
-                # Faire les prévisions
-                forecast = res.forecast(steps=forecast_periods)
-                
-                # Pour chaque année de prévision
-                for i, pred in enumerate(forecast):
-                    year = ts.index[-1] + i + 1
-                    season = f"{year} - {year+1}"
-                    
-                    forecasts.append({
-                        'Parcelle': parcel,
-                        'Espèce': species,
-                        'Year': year,
-                        'Saison': season,
-                        'Production Prévue (g/plant)': pred,
-                        'Alpha': res.params['smoothing_level'],
-                        'Beta': res.params['smoothing_trend']
-                    })
-                    
-                print(f"    Prévision réussie, alpha={res.params['smoothing_level']:.4f}, beta={res.params['smoothing_trend']:.4f}")
-                
-            except Exception as e:
-                print(f"    Erreur lors de l'ajustement du modèle: {e}")
-    
+            res = model.fit(optimized=True)
+            
+            # Faire les prévisions
+            forecast = res.forecast(steps=forecast_periods)
+            
+            # Pour chaque année de prévision
+            for i, pred in enumerate(forecast):
+                year = ts.index[-1] + i + 1
+                season = f"{year} - {year+1}"
+                forecasts.append({
+                    'Parcelle': parcel,
+                    'Espèce': species,
+                    'Year': year,
+                    'Saison': season,
+                    'Production Prévue (g/plant)': pred,
+                    'Alpha': res.params['smoothing_level'],
+                    'Beta': res.params['smoothing_trend']
+                })
+            print(f"    Prévision réussie, alpha={res.params['smoothing_level']:.4f}, beta={res.params['smoothing_trend']:.4f}")
+        except Exception as e:
+            print(f"    Erreur lors de l'ajustement du modèle: {e}")
+
     # Convertir en DataFrame
     forecasts_df = pd.DataFrame(forecasts)
-    
     return forecasts_df
 
 
@@ -174,16 +210,70 @@ def compare_holts_models(data, forecast_periods=3):
     """
     # Préparer les données
     time_series = prepare_time_series_data(data)
-    
+    # S'assurer que l'index est bien d'entiers (année)
+    import pandas as pd
+    if not pd.api.types.is_integer_dtype(time_series.index):
+        try:
+            time_series.index = time_series.index.astype(int)
+        except Exception:
+            print("[AVERTISSEMENT] L'index de la série temporelle n'est pas convertible en années (int). Prévisions non fiables.")
     print("\nComparaison des modèles de Holt linéaire et exponentiel:")
-    
     # Ajuster le modèle linéaire
-    linear_model = Holt(time_series['Production au plant (g)'], exponential=False)
-    linear_results = linear_model.fit(optimized=True)
-    
+    import pandas as pd
+    ts_linear = time_series.copy()
+    import pandas as pd
+    # Préparer série pour Holt avec RangeIndex strictement consécutif
+    years = ts_linear.index.values
+    if pd.api.types.is_integer_dtype(years) and len(years) > 1:
+        full_range = pd.RangeIndex(start=years[0], stop=years[-1]+1)
+        ts_linear = ts_linear.reindex(full_range)
+        ts_linear.index.name = 'Year'
+        n_missing = ts_linear['Production au plant (g)'].isna().sum()
+        if n_missing > 0:
+            print(f"[INFO] {n_missing} années manquantes (linéaire). Interpolation automatique...")
+            ts_linear['Production au plant (g)'] = ts_linear['Production au plant (g)'].interpolate(method='linear')
+            still_missing = ts_linear['Production au plant (g)'].isna().sum()
+            if still_missing > 0:
+                print(f"[AVERTISSEMENT] {still_missing} années restent manquantes après interpolation (linéaire). Ignorées.")
+            ts_linear = ts_linear[~ts_linear['Production au plant (g)'].isna()]
+    if ts_linear.empty or len(ts_linear) < 2:
+        print("[ERREUR] Série trop courte après nettoyage/interpolation pour Holt linéaire. Fit impossible.")
+        linear_results = None
+    else:
+        prod_series = pd.Series(
+            ts_linear['Production au plant (g)'].values,
+            index=pd.RangeIndex(start=ts_linear.index.min(), stop=ts_linear.index.max()+1),
+            name='Production au plant (g)'
+        )
+        linear_model = Holt(prod_series, exponential=False)
+        linear_results = linear_model.fit(optimized=True)
+
     # Ajuster le modèle exponentiel
-    exp_model = Holt(time_series['Production au plant (g)'], exponential=True)
-    exp_results = exp_model.fit(optimized=True)
+    ts_exp = time_series.copy()
+    years = ts_exp.index.values
+    if pd.api.types.is_integer_dtype(years) and len(years) > 1:
+        full_range = pd.RangeIndex(start=years[0], stop=years[-1]+1)
+        ts_exp = ts_exp.reindex(full_range)
+        ts_exp.index.name = 'Year'
+        n_missing = ts_exp['Production au plant (g)'].isna().sum()
+        if n_missing > 0:
+            print(f"[INFO] {n_missing} années manquantes (exponentiel). Interpolation automatique...")
+            ts_exp['Production au plant (g)'] = ts_exp['Production au plant (g)'].interpolate(method='linear')
+            still_missing = ts_exp['Production au plant (g)'].isna().sum()
+            if still_missing > 0:
+                print(f"[AVERTISSEMENT] {still_missing} années restent manquantes après interpolation (exponentiel). Ignorées.")
+            ts_exp = ts_exp[~ts_exp['Production au plant (g)'].isna()]
+    if ts_exp.empty or len(ts_exp) < 2:
+        print("[ERREUR] Série trop courte après nettoyage/interpolation pour Holt exponentiel. Fit impossible.")
+        exp_results = None
+    else:
+        prod_series_exp = pd.Series(
+            ts_exp['Production au plant (g)'].values,
+            index=pd.RangeIndex(start=ts_exp.index.min(), stop=ts_exp.index.max()+1),
+            name='Production au plant (g)'
+        )
+        exp_model = Holt(prod_series_exp, exponential=True)
+        exp_results = exp_model.fit(optimized=True)
     
     # Calculer les métriques pour le modèle linéaire
     linear_mse = ((linear_results.fittedvalues - time_series['Production au plant (g)']) ** 2).mean()

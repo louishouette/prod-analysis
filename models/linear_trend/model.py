@@ -15,16 +15,20 @@ def prepare_time_series_data(data):
     """
     # Créer un tableau résumant la production moyenne par saison
     time_series = data.groupby(['Saison'])['Production au plant (g)'].mean().reset_index()
-    
     # Extraire l'année de début de la saison et convertir en entier
     time_series['Year'] = time_series['Saison'].str.split(' - ').str[0].astype(int)
-    
     # Trier par année
     time_series = time_series.sort_values('Year')
-    
-    # Définir l'année comme index
+    # Définir l'année comme index (Int64Index)
     time_series.set_index('Year', inplace=True)
-    
+    # Nettoyage : supprimer les NaN
+    time_series = time_series[~time_series['Production au plant (g)'].isna()]
+    # Vérification taille
+    if len(time_series) < 2:
+        print("[AVERTISSEMENT] Série temporelle trop courte pour modélisation (moins de 2 points).")
+    # Vérifier variation
+    if time_series['Production au plant (g)'].nunique() == 1:
+        print("[AVERTISSEMENT] Série temporelle constante (pas de variation de production).")
     return time_series
 
 
@@ -136,27 +140,39 @@ def analyze_parcel_trends(data):
         # S'assurer qu'il y a au moins deux saisons de données
         if group_data['Saison'].nunique() < 2:
             continue
-            
         # Créer une série temporelle pour cette parcelle-espèce
         ts = group_data.groupby(['Saison'])['Production au plant (g)'].mean().reset_index()
         ts['Year'] = ts['Saison'].str.split(' - ').str[0].astype(int)
         ts = ts.sort_values('Year')
-        
+        statut = None
         # S'il y a assez de points pour une régression linéaire
-        if len(ts) >= 2:
+        if len(ts) < 3:
+            statut = 'Série trop courte'
+            pente, r2, pval = float('nan'), float('nan'), float('nan')
+        elif ts['Production au plant (g)'].nunique() == 1:
+            statut = 'Constante'
+            pente, r2, pval = 0.0, float('nan'), float('nan')
+        else:
             # Ajuster une régression linéaire simple
             X = sm.add_constant(ts['Year'])
             model = sm.OLS(ts['Production au plant (g)'], X)
             res = model.fit()
-            
-            # Stocker les résultats
-            results.append({
-                'Parcelle': parcel,
-                'Espèce': species,
-                'Pente': res.params[1],
-                'R²': res.rsquared,
-                'P-value': res.pvalues[1]
-            })
+            pente = res.params[1]
+            r2 = res.rsquared
+            pval = res.pvalues[1]
+            if not (pd.isna(pente) or pd.isna(r2) or pd.isna(pval)):
+                statut = 'OK'
+            else:
+                statut = 'Non significatif'
+        # Stocker les résultats
+        results.append({
+            'Parcelle': parcel,
+            'Espèce': species,
+            'Pente': pente,
+            'R²': r2,
+            'P-value': pval,
+            'Statut': statut
+        })
     
     # Convertir en DataFrame et trier par pente (tendance)
     results_df = pd.DataFrame(results)

@@ -12,11 +12,39 @@ def build_exponential_smoothing_model(data, alpha=None):
     Utilise l'Âge Brut comme variable d'âge.
     """
     time_series = prepare_time_series_data(data)
+    import pandas as pd
+    if not pd.api.types.is_integer_dtype(time_series.index):
+        try:
+            time_series.index = time_series.index.astype(int)
+        except Exception:
+            print("[AVERTISSEMENT] L'index de la série temporelle n'est pas convertible en années (int). Prévisions non fiables.")
+    # Forcer RangeIndex strictement consécutif (min à max)
+    years = time_series.index.values
+    if pd.api.types.is_integer_dtype(years):
+        if len(years) > 1:
+            full_range = pd.RangeIndex(start=years[0], stop=years[-1]+1)
+            time_series = time_series.reindex(full_range)
+            time_series.index.name = 'Year'
+    # Supprimer les NaN (années manquantes)
+    n_missing = time_series['Production au plant (g)'].isna().sum()
+    if n_missing > 0:
+        print(f"[INFO] {n_missing} années manquantes détectées. Interpolation automatique des valeurs manquantes...")
+        time_series['Production au plant (g)'] = time_series['Production au plant (g)'].interpolate(method='linear')
+        still_missing = time_series['Production au plant (g)'].isna().sum()
+        if still_missing > 0:
+            print(f"[AVERTISSEMENT] {still_missing} années restent manquantes après interpolation. Elles seront ignorées.")
+        time_series = time_series[~time_series['Production au plant (g)'].isna()]
     if time_series.empty or len(time_series) < 2:
-        print("Erreur: Pas assez de données pour construire un modèle de lissage exponentiel")
+        print("[ERREUR] Série trop courte après nettoyage/interpolation pour le lissage exponentiel. Fit impossible.")
         return None, time_series
     try:
-        model = SimpleExpSmoothing(time_series['Production au plant (g)'])
+        # Reconstruire une Series avec RangeIndex strictement consécutif
+        prod_series = pd.Series(
+            time_series['Production au plant (g)'].values,
+            index=pd.RangeIndex(start=time_series.index.min(), stop=time_series.index.max()+1),
+            name='Production au plant (g)'
+        )
+        model = SimpleExpSmoothing(prod_series)
         if alpha is not None:
             fit_model = model.fit(smoothing_level=alpha, optimized=False)
         else:
@@ -35,10 +63,16 @@ def project_exponential_smoothing(model, time_series, forecast_periods=3):
     try:
         forecast = model.forecast(steps=forecast_periods)
         last_period = time_series.index.max()
-        forecast_index = range(last_period + 1, last_period + forecast_periods + 1)
+        # Générer un RangeIndex strictement consécutif pour la prévision
+        first_period = last_period + 1
+        last_forecast = last_period + forecast_periods + 1
+        forecast_index = pd.RangeIndex(start=first_period, stop=last_forecast)
+        if len(forecast) != len(forecast_index):
+            print(f"[AVERTISSEMENT] Taille forecast/index non alignée : {len(forecast)} vs {len(forecast_index)}")
         forecasts_df = pd.DataFrame({
             'forecast': forecast.values
         }, index=forecast_index)
+        forecasts_df.index.name = time_series.index.name if time_series.index.name else 'Year'
         historical_df = pd.DataFrame({
             'Production au plant (g)': time_series['Production au plant (g)'],
             'Type': 'Historical'
@@ -173,26 +207,23 @@ def project_exponential_smoothing(model, time_series, forecast_periods=3):
     try:
         # Générer les prévisions sans intervalles de confiance (non supporté par SimpleExpSmoothing)
         forecast = model.forecast(steps=forecast_periods)
-        
-        # Créer un DataFrame pour les prévisions
-        last_period = time_series.index.max()
-        forecast_index = range(last_period + 1, last_period + forecast_periods + 1)
-        
+        # S'assurer que l'index est bien d'entiers
+        import pandas as pd
+        last_period = int(time_series.index.max())
+        forecast_years = range(last_period + 1, last_period + forecast_periods + 1)
+        forecast_index = pd.Index(forecast_years, dtype=int)
         forecasts_df = pd.DataFrame({
             'forecast': forecast.values
         }, index=forecast_index)
-        
         # Combiner les données historiques et les prévisions pour la visualisation
         historical_df = pd.DataFrame({
             'Production au plant (g)': time_series['Production au plant (g)'],
             'Type': 'Historical'
         }, index=time_series.index)
-        
         forecast_data = pd.DataFrame({
             'Production au plant (g)': forecast.values,
             'Type': 'Forecast'
         }, index=forecast_index)
-        
         combined_data = pd.concat([historical_df, forecast_data])
         
         print("Projections complétées avec succès.")
@@ -260,72 +291,49 @@ def exponential_smoothing_by_parcel(data, forecast_periods=3, min_periods=2):
     
     # Pour chaque parcelle, construire et appliquer un modèle de lissage exponentiel
     for parcel in parcels:
-        parcel_ts = parcel_data[parcel_data['Parcelle'] == parcel]
-        parcel_ts = parcel_ts.sort_values('Saison')
-        
-        if len(parcel_ts) >= min_periods:
-            try:
-                # Appliquer le modèle de lissage exponentiel
-                model = SimpleExpSmoothing(parcel_ts['Production au plant (g)'].values)
-                fit_model = model.fit(optimized=True)
-                
-                # Générer les prévisions
-                forecast_values = fit_model.forecast(steps=forecast_periods)
-                
-                # Ajouter les prévisions au résultat
-                for i, season in enumerate(next_seasons):
-                    forecasts.append({
-                        'Parcelle': parcel,
-                        'Saison': season,
-                        'Type': 'Prévision',
-                        'Production prévue (g/plant)': forecast_values[i],
-                        'Alpha': fit_model.params['smoothing_level']
-                    })
-            except Exception as e:
-                print(f"Erreur lors de la prévision pour la parcelle {parcel}: {e}")
-    
+        parcel_ts = parcel_data[parcel_data['Parcelle'] == parcel].sort_values('Saison')
+        # Préparation de la série temporelle robuste
+        ts = parcel_ts[['Saison', 'Production au plant (g)']].copy()
+        ts['Year'] = ts['Saison'].str.split(' - ').str[0].astype(int)
+        ts = ts.sort_values('Year')
+        ts.set_index('Year', inplace=True)
+        ts = ts[~ts['Production au plant (g)'].isna()]
+        if len(ts) < min_periods:
+            print(f"[AVERTISSEMENT] Parcelle {parcel} : série trop courte pour modélisation (moins de {min_periods} points).")
+            continue
+        if ts['Production au plant (g)'].nunique() == 1:
+            print(f"[AVERTISSEMENT] Parcelle {parcel} : série constante (pas de variation de production).")
+            continue
+        try:
+            import pandas as pd
+            import warnings
+            # S'assurer que l'index est bien d'entiers (année)
+            if not pd.api.types.is_integer_dtype(ts.index):
+                try:
+                    ts.index = ts.index.astype(int)
+                except Exception:
+                    print(f"[AVERTISSEMENT] Parcelle {parcel} : index non convertible en années (int). Prévisions non fiables.")
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                model = SimpleExpSmoothing(ts['Production au plant (g)'])
+                res = model.fit(optimized=True)
+            forecast = res.forecast(steps=forecast_periods)
+            for i, pred in enumerate(forecast):
+                year = ts.index[-1] + i + 1
+                season = f"{year} - {year+1}"
+                forecasts.append({
+                    'Parcelle': parcel,
+                    'Year': year,
+                    'Saison': season,
+                    'Production Prévue (g/plant)': pred,
+                    'Alpha': res.params['smoothing_level']
+                })
+        except Exception as e:
+            print(f"Erreur lors de la prévision pour la parcelle {parcel}: {e}")
     if forecasts:
         forecasts_df = pd.DataFrame(forecasts)
-        print(f"Prévisions générées pour {len(parcels)} parcelles sur {len(next_seasons)} saisons.")
+        print(f"Prévisions générées pour {len(forecasts_df['Parcelle'].unique())} parcelles sur {forecast_periods} saisons.")
         return forecasts_df
     else:
         print("Aucune prévision n'a pu être générée.")
         return pd.DataFrame()
-        ts = group_data.groupby(['Saison'])['Production au plant (g)'].mean().reset_index()
-        ts['Year'] = ts['Saison'].str.split(' - ').str[0].astype(int)
-        ts = ts.sort_values('Year')
-        ts.set_index('Year', inplace=True)
-        
-        # S'il y a assez de points pour le lissage exponentiel
-        if len(ts) >= 2:
-            try:
-                # Ajuster le modèle
-                model = SimpleExpSmoothing(ts['Production au plant (g)'])
-                res = model.fit(optimized=True)
-                
-                # Faire les prévisions
-                forecast = res.forecast(steps=forecast_periods)
-                
-                # Pour chaque année de prévision
-                for i, pred in enumerate(forecast):
-                    year = ts.index[-1] + i + 1
-                    season = f"{year} - {year+1}"
-                    
-                    forecasts.append({
-                        'Parcelle': parcel,
-                        'Espèce': species,
-                        'Year': year,
-                        'Saison': season,
-                        'Production Prévue (g/plant)': pred,
-                        'Alpha': res.params['smoothing_level']
-                    })
-                    
-                print(f"    Prévision réussie, alpha={res.params['smoothing_level']:.4f}")
-                
-            except Exception as e:
-                print(f"    Erreur lors de l'ajustement du modèle: {e}")
-    
-    # Convertir en DataFrame
-    forecasts_df = pd.DataFrame(forecasts)
-    
-    return forecasts_df
