@@ -1,0 +1,45 @@
+[DEBUG] Script truffle_forecast.py lancé
+Répertoires de sortie créés avec succès.
+Note: 'Age Brut' renommé en 'Age' pour les analyses.
+Données chargées avec succès depuis production.csv. Shape: (196, 15)
+Données chargées avec succès depuis ramp-up.csv. Shape: (8, 2)
+[DEBUG] Index avant toute opération: unique=True, duplicated=0, type=<class 'pandas.core.indexes.range.RangeIndex'>
+[DEBUG] Colonnes: ['Saison', 'Parcelle', 'Espèce', 'Age', 'Age', 'Pénalité', 'Dates plantation', 'Plants', 'Plants Productifs', 'Taux de Productivité (%)', 'Poids produit (g)', 'Nombre de truffe', 'Poids moyen (g)', 'Production au plant (g)', 'Plants Non-Productifs à Nouveau']
+[DEBUG] Types de colonnes: Saison                              object
+Parcelle                            object
+Espèce                              object
+Age                                  int64
+Age                                  int64
+Pénalité                            object
+Dates plantation                    object
+Plants                               int64
+Plants Productifs                    int64
+Taux de Productivité (%)           float64
+Poids produit (g)                    int64
+Nombre de truffe                     int64
+Poids moyen (g)                      int64
+Production au plant (g)              int64
+Plants Non-Productifs à Nouveau      int64
+dtype: object
+[DEBUG] Colonnes dupliquées détectées: ['Age'], suppression...
+[DEBUG] Index avant filtrage âge: unique=True, duplicated=0
+Filtre par âge: 196 lignes conservées sur 196
+[DEBUG] Index avant dropna: unique=True, duplicated=0
+Filtre par production non-manquante: 196 lignes conservées sur 196
+[DEBUG] Index avant filtrage production positive: unique=True, duplicated=0
+Filtre par production positive: 196 lignes conservées sur 196
+[DEBUG] Index final: unique=True, duplicated=0
+Données préparées avec succès: 196 lignes valides sur 196 au total
+
+Note importante: Utilisation de l'Âge Brut comme variable fondamentale pour
+grouper les lots et estimer la progression de la production, conformément aux
+conclusions des analyses antérieures qui ont démontré que le facteur de pénalité
+appliqué à l'âge des arbres n'était pas scientifiquement fondé.
+Traceback (most recent call last):
+  File "/Users/louis/Developer/prod-analysis/truffle_forecast.py", line 449, in <module>
+    main()
+    ~~~~^^
+  File "/Users/louis/Developer/prod-analysis/truffle_forecast.py", line 284, in main
+    run_all = args.models == 'all'
+              ^^^^^^^^^^^
+AttributeError: 'Namespace' object has no attribute 'models'

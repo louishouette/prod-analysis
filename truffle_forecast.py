@@ -28,16 +28,19 @@ from models.state_space.model import (
     build_state_space_model, project_state_space_production
 )
 from models.linear_trend.model import (
-    build_linear_trend_model, project_linear_trend, analyze_parcel_trends
+    build_linear_trend_model, project_linear_trend, prepare_time_series_data
 )
 from models.exponential_smoothing.model import (
-    build_exponential_smoothing_model, project_exponential_smoothing,
-    exponential_smoothing_by_parcel
+    build_exponential_smoothing_model, project_exponential_smoothing
 )
 from models.holts_method.model import (
-    build_holts_trend_model, project_holts_trend, holts_method_by_parcel,
-    compare_holts_models
+    build_holts_trend_model, project_holts_trend
 )
+
+# Aliases pour compatibilité avec le pipeline principal
+run_linear_trend_model = build_linear_trend_model
+run_exponential_smoothing_model = build_exponential_smoothing_model
+run_holts_trend_model = build_holts_trend_model
 
 
 def run_gompertz_model(data, rampup_data, next_season=2025, max_age=12):
@@ -217,394 +220,100 @@ def run_state_space_model(data, rampup_data, gompertz_params, next_season=2025):
     return ss_projections, next_season_data
 
 
-def run_linear_trend_model(data, forecast_years=3):
+def compare_models(data, gompertz_projections, state_space_projections):
     """
-    Exécute le modèle de tendance linéaire pour projeter la production future.
-    Utilise l'Âge Brut comme variable d'âge.
-    
+    Compare les résultats des modèles robustes de prévision (Gompertz, Espace d'États).
+
     Paramètres:
     -----------
     data : DataFrame avec les données de production
-    forecast_years : nombre d'années à prévoir
-    
+    gompertz_projections : DataFrame de projections Gompertz
+    state_space_projections : DataFrame de projections à espace d'états
+
     Retourne:
     ---------
-    résultats du modèle, prévisions
+    DataFrame avec les résultats de la comparaison (alignés sur l'âge)
     """
-    print("\n" + "=" * 80)
-    print("Exécution du modèle de tendance linéaire")
-    print("=" * 80)
-    
-    # Construire le modèle de tendance linéaire
-    model_results, time_series = build_linear_trend_model(data)
-    
-    # Projeter la production future
-    combined_data, forecasts = project_linear_trend(model_results, time_series, forecast_years)
-    
-    # Analyser les tendances par parcelle
-    print("\nAnalyse des tendances par parcelle...")
-    parcel_trends = analyze_parcel_trends(data)
-    
-    if not parcel_trends.empty:
-        # Sauvegarder les tendances par parcelle
-        parcel_trends.to_csv('generated/data/projections/linear_trend_by_parcel.csv', index=False)
-        print("Tendances linéaires par parcelle sauvegardées dans 'generated/data/projections/linear_trend_by_parcel.csv'")
-        
-        # Afficher les parcelles avec les tendances les plus positives et négatives
-        print("\nParcelles avec les tendances les plus positives:")
-        print(parcel_trends.head(5))
-        
-        print("\nParcelles avec les tendances les plus négatives:")
-        print(parcel_trends.tail(5))
-    
-    # Sauvegarder les prévisions
-    forecasts.to_csv('generated/data/projections/linear_trend_forecasts.csv')
-    print("Prévisions de tendance linéaire sauvegardées dans 'generated/data/projections/linear_trend_forecasts.csv'")
-    
-    # Visualiser les prévisions
-    os.makedirs('generated/plots/linear_trend', exist_ok=True)
-    plt.figure(figsize=(12, 8))
-    
-    # Tracer les données historiques
-    historical = combined_data[combined_data['Type'] == 'Historical']
-    plt.plot(historical.index, historical['Production au plant (g)'], 'o-', label='Données historiques')
-    
-    # Tracer les prévisions
-    forecast_data = combined_data[combined_data['Type'] == 'Forecast']
-    plt.plot(forecast_data.index, forecast_data['Production au plant (g)'], 'r^-', label='Prévisions')
-    
-    # Tracer les intervalles de confiance
-    if 'lower' in forecasts.columns and 'upper' in forecasts.columns:
-        plt.fill_between(forecasts.index, forecasts['lower'], forecasts['upper'], 
-                         color='r', alpha=0.1, label='Intervalle de confiance 95%')
-    
-    plt.title('Prévision de Production par Tendance Linéaire')
-    plt.xlabel('Année')
-    plt.ylabel('Production Moyenne par Plant (g)')
-    plt.legend()
-    plt.grid(True)
-    plt.xticks(combined_data.index)
-    plt.tight_layout()
-    plt.savefig('generated/plots/linear_trend/linear_forecast.png', dpi=300, bbox_inches='tight')
-    
-    return model_results, forecasts
+    # Extraire la colonne principale (LP) si elle existe, sinon prendre la dernière colonne
+    def extract_main(df):
+        if isinstance(df, pd.DataFrame):
+            cols = list(df.columns)
+            # Si Age n'est pas une colonne mais l'index, le remettre comme colonne
+            if 'Age' not in cols and getattr(df.index, 'name', None) == 'Age':
+                df = df.reset_index()
+                cols = list(df.columns)
+            if 'LP' in cols and 'Age' in cols:
+                return df[['Age', 'LP']].rename(columns={'LP': 'Gompertz'})
+            elif 'Age' in cols:
+                # Prendre la dernière colonne numérique
+                col = [c for c in cols if c != 'Age'][-1]
+                return df[['Age', col]].rename(columns={col: 'Gompertz'})
+            else:
+                # Si Age n'existe pas, créer à partir de l'index
+                df = df.reset_index(drop=True)
+                df['Age'] = df.index + 1
+                col = df.columns[-2]  # dernière colonne avant Age
+                return df[['Age', col]].rename(columns={col: 'Gompertz'})
+        return None
+
+    def extract_main_ss(df):
+        if isinstance(df, pd.DataFrame):
+            cols = list(df.columns)
+            if 'Age' not in cols and getattr(df.index, 'name', None) == 'Age':
+                df = df.reset_index()
+                cols = list(df.columns)
+            if 'LP' in cols and 'Age' in cols:
+                return df[['Age', 'LP']].rename(columns={'LP': 'Espace d’États'})
+            elif 'Age' in cols:
+                col = [c for c in cols if c != 'Age'][-1]
+                return df[['Age', col]].rename(columns={col: 'Espace d’États'})
+            else:
+                df = df.reset_index(drop=True)
+                df['Age'] = df.index + 1
+                col = df.columns[-2]
+                return df[['Age', col]].rename(columns={col: 'Espace d’États'})
+        return None
+
+    gompertz_df = extract_main(gompertz_projections)
+    state_space_df = extract_main_ss(state_space_projections)
+    # Fusionner sur Age
+    if gompertz_df is not None and state_space_df is not None:
+        comparison_df = pd.merge(gompertz_df, state_space_df, on='Age', how='outer')
+    else:
+        # Fallback : concaténer les valeurs (peu probable)
+        comparison_df = pd.DataFrame({'Gompertz': gompertz_projections, 'Espace d’États': state_space_projections})
+    return comparison_df
 
 
-def run_exponential_smoothing_model(data, forecast_periods=3, alpha=None):
-    """
-    Exécute le modèle de lissage exponentiel simple pour projeter la production future.
-    Utilise l'Âge Brut comme variable d'âge.
-    
-    Paramètres:
-    -----------
-    data : DataFrame avec les données de production
-    forecast_periods : nombre de périodes à prévoir
-    alpha : paramètre de lissage (None pour estimation automatique)
-    
-    Retourne:
-    ---------
-    résultats du modèle, prévisions
-    """
-    print("\n" + "=" * 80)
-    print("Exécution du modèle de lissage exponentiel simple")
-    print("=" * 80)
-    
-    # Construire le modèle de lissage exponentiel
-    model_results, time_series = build_exponential_smoothing_model(data, alpha)
-    
-    # Projeter la production future
-    combined_data, forecasts = project_exponential_smoothing(model_results, time_series, forecast_periods)
-    
-    # Appliquer le lissage exponentiel par parcelle
-    print("\nApplication du lissage exponentiel par parcelle...")
-    parcel_forecasts = exponential_smoothing_by_parcel(data, forecast_periods)
-    
-    # Sauvegarder les prévisions par parcelle
-    if not parcel_forecasts.empty:
-        parcel_forecasts.to_csv('generated/data/projections/exp_smoothing_by_parcel.csv', index=False)
-        print("Prévisions par lissage exponentiel par parcelle sauvegardées dans 'generated/data/projections/exp_smoothing_by_parcel.csv'")
-    
-    # Sauvegarder les prévisions globales
-    forecasts.to_csv('generated/data/projections/exp_smoothing_forecasts.csv')
-    print("Prévisions par lissage exponentiel sauvegardées dans 'generated/data/projections/exp_smoothing_forecasts.csv'")
-    
-    # Visualiser les prévisions
-    os.makedirs('generated/plots/exponential_smoothing', exist_ok=True)
-    plt.figure(figsize=(12, 8))
-    
-    # Tracer les données historiques et les valeurs ajustées
-    historical = combined_data[combined_data['Type'] == 'Historical']
-    plt.plot(historical.index, historical['Production au plant (g)'], 'o-', label='Données historiques')
-    plt.plot(historical.index, model_results.fittedvalues, 'g--', label='Valeurs ajustées')
-    
-    # Tracer les prévisions
-    forecast_data = combined_data[combined_data['Type'] == 'Forecast']
-    plt.plot(forecast_data.index, forecast_data['Production au plant (g)'], 'r^-', label='Prévisions')
-    
-    # Tracer les intervalles de confiance
-    if 'lower' in forecasts.columns and 'upper' in forecasts.columns:
-        plt.fill_between(forecasts.index, forecasts['lower'], forecasts['upper'], 
-                         color='r', alpha=0.1, label='Intervalle de confiance 95%')
-    
-    plt.title('Prévision de Production par Lissage Exponentiel Simple')
-    plt.xlabel('Année')
-    plt.ylabel('Production Moyenne par Plant (g)')
-    plt.legend()
-    plt.grid(True)
-    plt.xticks(combined_data.index)
-    plt.tight_layout()
-    plt.savefig('generated/plots/exponential_smoothing/exp_smoothing_forecast.png', dpi=300, bbox_inches='tight')
-    
-    return model_results, forecasts
 
-
-def run_holts_trend_model(data, forecast_periods=3):
+def bayesian_hierarchical_simple(data, rampup_curve):
     """
-    Exécute le modèle de Holt (tendance linéaire) pour projeter la production future.
-    Utilise l'Âge Brut comme variable d'âge.
+    Squelette de modèle bayésien hiérarchique simple pour faible historique.
+    Ce modèle suppose : production_observée = f(age) × effet_parcelle × bruit
+    - f(age) : courbe cible connue (Gompertz ou autre)
+    - effet_parcelle : prior centré sur 1, variance faible
+    - bruit : normal, faible variance
     
-    Paramètres:
-    -----------
-    data : DataFrame avec les données de production
-    forecast_periods : nombre de périodes à prévoir
-    
-    Retourne:
-    ---------
-    résultats du modèle, prévisions
+    Ce squelette est à compléter selon vos besoins (PyMC, Stan, etc.).
     """
-    print("\n" + "=" * 80)
-    print("Exécution du modèle de Holt (tendance linéaire)")
-    print("=" * 80)
-    
-    # Comparer les modèles de Holt linéaire et exponentiel
-    model_results, time_series, best_model = compare_holts_models(data, forecast_periods)
-    
-    # Projeter la production future
-    combined_data, forecasts = project_holts_trend(model_results, time_series, forecast_periods)
-    
-    # Appliquer la méthode de Holt par parcelle
-    print("\nApplication de la méthode de Holt par parcelle...")
-    exponential = (best_model == "exponentiel")
-    parcel_forecasts = holts_method_by_parcel(data, forecast_periods, exponential)
-    
-    # Sauvegarder les prévisions par parcelle
-    if not parcel_forecasts.empty:
-        parcel_forecasts.to_csv('generated/data/projections/holts_method_by_parcel.csv', index=False)
-        print("Prévisions par méthode de Holt par parcelle sauvegardées dans 'generated/data/projections/holts_method_by_parcel.csv'")
-    
-    # Sauvegarder les prévisions globales
-    forecasts.to_csv('generated/data/projections/holts_method_forecasts.csv')
-    print("Prévisions par méthode de Holt sauvegardées dans 'generated/data/projections/holts_method_forecasts.csv'")
-    
-    # Visualiser les prévisions
-    os.makedirs('generated/plots/holts_method', exist_ok=True)
-    plt.figure(figsize=(12, 8))
-    
-    # Tracer les données historiques et les valeurs ajustées
-    historical = combined_data[combined_data['Type'] == 'Historical']
-    plt.plot(historical.index, historical['Production au plant (g)'], 'o-', label='Données historiques')
-    plt.plot(historical.index, model_results.fittedvalues, 'g--', label='Valeurs ajustées')
-    
-    # Tracer les prévisions
-    forecast_data = combined_data[combined_data['Type'] == 'Forecast']
-    plt.plot(forecast_data.index, forecast_data['Production au plant (g)'], 'r^-', label='Prévisions')
-    
-    # Tracer les intervalles de confiance
-    if 'lower' in forecasts.columns and 'upper' in forecasts.columns:
-        plt.fill_between(forecasts.index, forecasts['lower'], forecasts['upper'], 
-                         color='r', alpha=0.1, label='Intervalle de confiance 95%')
-    
-    trend_type = "exponentielle" if exponential else "linéaire"
-    plt.title(f'Prévision de Production par Méthode de Holt (tendance {trend_type})')
-    plt.xlabel('Année')
-    plt.ylabel('Production Moyenne par Plant (g)')
-    plt.legend()
-    plt.grid(True)
-    plt.xticks(combined_data.index)
-    plt.tight_layout()
-    plt.savefig('generated/plots/holts_method/holts_forecast.png', dpi=300, bbox_inches='tight')
-    
-    return model_results, forecasts
-
-
-def compare_models(data, gompertz_projections, state_space_projections, linear_forecasts, 
-                 exp_smoothing_forecasts, holts_forecasts):
-    """
-    Compare les résultats des différents modèles de prévision.
-    
-    Paramètres:
-    -----------
-    data : DataFrame avec les données de production
-    gompertz_projections : projections du modèle Gompertz
-    state_space_projections : projections du modèle à espace d'états
-    linear_forecasts : prévisions du modèle de tendance linéaire
-    exp_smoothing_forecasts : prévisions du modèle de lissage exponentiel
-    holts_forecasts : prévisions de la méthode de Holt
-    
-    Retourne:
-    ---------
-    DataFrame avec les résultats de la comparaison
-    """
-    print("\n" + "=" * 80)
-    print("Comparaison des modèles de prévision")
-    print("=" * 80)
-    
-    # Créer un DataFrame pour stocker les résultats de la comparaison
-    model_comparison = pd.DataFrame()
-    
-    # Extraire les données historiques pour validation
-    # Utiliser l'Âge Brut (sans pénalité) comme recommandé dans les analyses antérieures
-    historical_data = data[
-        (~data['Production au plant (g)'].isna()) & 
-        (data['Production au plant (g)'] > 0) &
-        (data['Age'] > 0)
-    ].copy()
-    
-    # Calculer les statistiques de comparaison pour chaque modèle
-    models = {
-        'Gompertz': gompertz_projections,
-        'Espace d\'États': state_space_projections,
-        'Tendance Linéaire': linear_forecasts,
-        'Lissage Exponentiel': exp_smoothing_forecasts,
-        'Méthode de Holt': holts_forecasts
-    }
-    
-    # Préparer les données pour la comparaison
-    comparison_metrics = []
-    
-    print("\nCalibration des modèles avec les données historiques...")
-    
-    # Pour chaque modèle qui a des projections par âge
-    for model_name in ['Gompertz', 'Espace d\'États']:
-        if model_name in models and models[model_name] is not None and not models[model_name].empty:
-            model_df = models[model_name]
-            
-            # Calculer les erreurs pour chaque âge disponible dans les données historiques
-            errors = []
-            ages = sorted(historical_data['Age'].unique())
-            
-            for age in ages:
-                if age in model_df.index:
-                    actual_values = historical_data[historical_data['Age'] == age]['Production au plant (g)'].values
-                    if len(actual_values) > 0:
-                        # Pour les modèles basés sur les parcelles, prendre la moyenne des projections
-                        predicted_values = model_df.loc[age].mean()
-                        errors.append(abs(predicted_values - actual_values.mean()))
-            
-            if errors:
-                mae = np.mean(errors)
-                comparison_metrics.append({
-                    'Modèle': model_name,
-                    'Type': 'Par Âge',
-                    'MAE': mae,
-                    'RMSE': np.sqrt(np.mean(np.square(errors))),
-                    'MAPE': np.mean([abs(e/a)*100 if a > 0 else np.nan for e, a in 
-                                    zip(errors, [historical_data[historical_data['Age'] == age]['Production au plant (g)'].mean() 
-                                                for age in ages if age in model_df.index])])
-                })
-    
-    # Pour les modèles de séries temporelles
-    ts_models = {
-        'Tendance Linéaire': linear_forecasts,
-        'Lissage Exponentiel': exp_smoothing_forecasts,
-        'Méthode de Holt': holts_forecasts
-    }
-    
-    # Vérifier que nous avons assez de données pour valider les modèles de séries temporelles
-    if len(historical_data) >= 2:  # Au moins 2 saisons pour valider
-        historical_avg = historical_data.groupby('Saison')['Production au plant (g)'].mean()
-        
-        for model_name, forecast_df in ts_models.items():
-            if forecast_df is not None and not forecast_df.empty:
-                # Calculer les erreurs pour les saisons historiques disponibles dans les données
-                errors = []
-                for season in historical_avg.index:
-                    if season in forecast_df.index:
-                        actual = historical_avg[season]
-                        predicted = forecast_df.loc[season, 'forecast']
-                        errors.append(abs(predicted - actual))
-                
-                if errors:
-                    mae = np.mean(errors)
-                    comparison_metrics.append({
-                        'Modèle': model_name,
-                        'Type': 'Série Temporelle',
-                        'MAE': mae,
-                        'RMSE': np.sqrt(np.mean(np.square(errors))),
-                        'MAPE': np.mean([abs(e/a)*100 if a > 0 else np.nan for e, a in 
-                                        zip(errors, historical_avg.values)])
-                    })
-    
-    # Créer le DataFrame de comparaison
-    if comparison_metrics:
-        model_comparison = pd.DataFrame(comparison_metrics)
-        # Trier par erreur absolue moyenne croissante
-        model_comparison = model_comparison.sort_values('MAE')
-    
-    if not model_comparison.empty:
-        # Sauvegarder les métriques de comparaison
-        os.makedirs('generated/data/model_comparison', exist_ok=True)
-        model_comparison.to_csv('generated/data/model_comparison/model_metrics.csv', index=False)
-        print("\nMétriques de comparaison des modèles sauvegardées dans 'generated/data/model_comparison/model_metrics.csv'")
-        
-        # Afficher les résultats de la comparaison
-        print("\nRésultats de la comparaison des modèles (ordonnés par MAE croissante):")
-        print(model_comparison.round(2))
-        
-        # Visualiser les comparaisons
-        os.makedirs('generated/plots/model_comparison', exist_ok=True)
-        
-        # Graphique des MAE
-        plt.figure(figsize=(12, 8))
-        ax = model_comparison.plot(x='Modèle', y='MAE', kind='bar', legend=False)
-        plt.title('Comparaison des Modèles - Erreur Absolue Moyenne (MAE)')
-        plt.ylabel('MAE (g/plant)')
-        plt.grid(axis='y', linestyle='--', alpha=0.7)
-        plt.tight_layout()
-        
-        # Ajouter les valeurs sur les barres
-        for i, v in enumerate(model_comparison['MAE']):
-            ax.text(i, v + 0.1, f"{v:.2f}", ha='center')
-            
-        plt.savefig('generated/plots/model_comparison/mae_comparison.png', dpi=300, bbox_inches='tight')
-        
-        # Graphique des MAPE
-        plt.figure(figsize=(12, 8))
-        ax = model_comparison.plot(x='Modèle', y='MAPE', kind='bar', legend=False)
-        plt.title('Comparaison des Modèles - Erreur Pourcentage Absolue Moyenne (MAPE)')
-        plt.ylabel('MAPE (%)')
-        plt.grid(axis='y', linestyle='--', alpha=0.7)
-        plt.tight_layout()
-        
-        # Ajouter les valeurs sur les barres
-        for i, v in enumerate(model_comparison['MAPE']):
-            ax.text(i, v + 0.5, f"{v:.2f}%", ha='center')
-            
-        plt.savefig('generated/plots/model_comparison/mape_comparison.png', dpi=300, bbox_inches='tight')
-    
-    return model_comparison
-
+    # TODO : Implémenter une version PyMC3/PyMC4 ou Stan selon vos préférences
+    pass
 
 def main():
     """
     Fonction principale pour exécuter le système de prévision de production de truffes.
-    Orchestration de tous les modèles statistiques et génération des rapports.
+    Modèles exécutés :
+    - Modèle Gompertz (non-linéaire à effets mixtes)
+    - Modèle à Espace d'États
+    - Modèle bayésien hiérarchique (par parcelle)
     """
-    # Analyser les arguments de la ligne de commande
+    # Charger les données
     parser = argparse.ArgumentParser(description="Système de prévision de production de truffes")
-    parser.add_argument('--data', default='production.csv', help="Fichier CSV des données de production")
-    parser.add_argument('--rampup', default='ramp-up.csv', help="Fichier CSV de la courbe de montée en production")
+    parser.add_argument('--data', default='data/production_historique.csv', help="Fichier CSV des données de production")
+    parser.add_argument('--rampup', default='data/ramp-up.csv', help="Fichier CSV de la courbe de montée en production")
+    parser.add_argument('--forecast_years', type=int, default=3, help="Nombre d'années à prévoir pour les modèles de tendance (défaut: 3)")
     parser.add_argument('--next-season', type=int, default=2025, help="Année de la prochaine saison à prévoir")
-    parser.add_argument('--forecast-years', type=int, default=3, help="Nombre d'années à prévoir")
-    parser.add_argument('--models', default='all', 
-                        choices=['all', 'gompertz', 'state_space', 'linear', 'exponential', 'holts'],
-                        help="Modèles à exécuter")
     args = parser.parse_args()
-    
-    print("=" * 80)
-    print("SYSTÈME DE PRÉVISION DE PRODUCTION DE TRUFFES")
-    print("=" * 80)
-    print(f"\nChargement des données depuis {args.data} et {args.rampup}")
     
     # Créer les répertoires nécessaires
     setup_directories()
@@ -632,45 +341,54 @@ def main():
     next_season_forecast = None
     
     # Exécuter les modèles sélectionnés
-    run_all = args.models == 'all'
+    
+    # Exécuter le modèle bayésien hiérarchique
+    print("\n=== Modèle Bayésien Hiérarchique ===")
+    try:
+        from models.bayesian_hierarchical import run_bayesian_hierarchical_model
+        summary, proj_df, trace = run_bayesian_hierarchical_model(data, rampup_data, output_dir='generated', max_age=12, verbose=True)
+        print("Modèle bayésien hiérarchique exécuté avec succès")
+    except Exception as e:
+        print(f"Erreur dans le pipeline bayésien : {e}")
     
     # Exécuter le modèle Gompertz
-    if run_all or args.models == 'gompertz':
-        gompertz_projections, gompertz_params = run_gompertz_model(
-            processed_data, rampup_data, args.next_season)
+    # Exécution du modèle Gompertz
+    gompertz_projections, gompertz_params = run_gompertz_model(
+        processed_data, rampup_data, args.next_season)
     
     # Exécuter le modèle à espace d'états
-    if run_all or args.models == 'state_space':
-        if gompertz_projections is not None:
-            state_space_projections, next_season_forecast = run_state_space_model(
-                processed_data, rampup_data, gompertz_params, args.next_season)
-        else:
-            print("\nAttention: Le modèle à espace d'états nécessite les paramètres du modèle Gompertz.")
-            print("Exécution du modèle Gompertz d'abord...")
-            gompertz_projections, gompertz_params = run_gompertz_model(
-                processed_data, rampup_data, args.next_season)
-            state_space_projections, next_season_forecast = run_state_space_model(
-                processed_data, rampup_data, gompertz_params, args.next_season)
+    # Exécution du modèle à espace d'états
+    if gompertz_projections is not None:
+        state_space_projections, next_season_forecast = run_state_space_model(
+            processed_data, rampup_data, gompertz_params, args.next_season)
+    else:
+        print("\nAttention: Le modèle à espace d'états nécessite les paramètres du modèle Gompertz.")
+        print("Exécution du modèle Gompertz d'abord...")
+        gompertz_projections, gompertz_params = run_gompertz_model(
+            processed_data, rampup_data, args.next_season)
+        state_space_projections, next_season_forecast = run_state_space_model(
+            processed_data, rampup_data, gompertz_params, args.next_season)
     
     # Exécuter le modèle de tendance linéaire
-    if run_all or args.models == 'linear':
-        linear_model, linear_forecasts = run_linear_trend_model(processed_data, args.forecast_years)
+    # Exécution du modèle linéaire
+    linear_model, linear_time_series = run_linear_trend_model(processed_data)
+    linear_forecasts, _ = project_linear_trend(linear_model, linear_time_series, args.forecast_years)
     
     # Exécuter le modèle de lissage exponentiel
-    if run_all or args.models == 'exponential':
-        exp_model, exp_smoothing_forecasts = run_exponential_smoothing_model(processed_data, args.forecast_years)
+    # Exécution du modèle de lissage exponentiel
+    exp_model, exp_time_series = run_exponential_smoothing_model(processed_data)
+    exp_smoothing_forecasts, _ = project_exponential_smoothing(exp_model, exp_time_series, args.forecast_years)
     
     # Exécuter la méthode de Holt
-    if run_all or args.models == 'holts':
-        holts_model, holts_forecasts = run_holts_trend_model(processed_data, args.forecast_years)
+    # Exécution du modèle de Holt
+    holts_model, holts_time_series = run_holts_trend_model(processed_data)
+    holts_forecasts, _ = project_holts_trend(holts_model, holts_time_series, args.forecast_years)
     
     # Comparer les modèles
-    if run_all or len([m for m in [gompertz_projections, state_space_projections, linear_forecasts, 
-                               exp_smoothing_forecasts, holts_forecasts] if m is not None]) > 1:
-        comparison = compare_models(
-            processed_data, gompertz_projections, state_space_projections,
-            linear_forecasts, exp_smoothing_forecasts, holts_forecasts
-        )
+    # Comparer les modèles si au moins deux projections sont disponibles
+    if len([m for m in [gompertz_projections, state_space_projections, linear_forecasts, 
+                        exp_smoothing_forecasts, holts_forecasts] if m is not None]) > 1:
+        comparison = compare_models(processed_data, gompertz_projections, state_space_projections)
     
     print("\n" + "=" * 80)
     print("GÉNÉRATION DU RAPPORT DE PRÉVISION")
@@ -697,9 +415,7 @@ def main():
         for parcel, production in top_parcels.items():
             print(f"{parcel}: {production:.2f} g ({production/1000:.2f} kg)")
     
-    print("\nAnalyse terminée.")
-    print("=" * 80)
-
 
 if __name__ == "__main__":
+    print("[DEBUG] Script truffle_forecast.py lancé")
     main()

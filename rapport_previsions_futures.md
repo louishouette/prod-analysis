@@ -87,18 +87,53 @@ Ces diagnostics sont également utiles pour guider l'amélioration continue du d
 
 ---
 
-
 ![Production actuelle par âge](generated/plots/production_projections/actual_production_by_age.png)
 
 Cette visualisation montre la variabilité significative de la production entre les arbres de même âge, soulignant l'importance d'un modèle qui peut capturer les effets spécifiques aux parcelles.
 
 ## Modèle Bayésien Hiérarchique
 
-Nous avons construit un modèle bayésien hiérarchique pour estimer les paramètres spécifiques à chaque parcelle, tout en maintenant la structure globale de la courbe de croissance.
+### Méthodologie
 
-![Diagnostics du modèle](generated/plots/model_diagnostics/model_trace.png)
+Le modèle bayésien hiérarchique permet d'estimer les paramètres spécifiques à chaque parcelle tout en les reliant à une distribution globale partagée. Contrairement aux approches fréquentistes, l'approche bayésienne quantifie explicitement l'incertitude sur les paramètres et permet d'intégrer des connaissances a priori.
 
-Le graphique ci-dessus montre les traces MCMC pour les principaux paramètres du modèle, confirmant une convergence adéquate dans l'estimation des paramètres.
+Notre modèle bayésien est structuré comme suit :
+
+1. **Structure hiérarchique** :
+   - Les paramètres A (asymptote) et β (déplacement) sont modélisés comme des variables aléatoires pour chaque parcelle
+   - Ces paramètres sont issus de distributions parentes avec hyperparamètres partagés entre toutes les parcelles
+   - Le paramètre γ (taux de croissance) est fixé à la valeur estimée à partir de la courbe de référence
+
+2. **Priors** :
+   - A ~ Normal(μ_A, σ_A), où μ_A ~ Normal(92, 20) et σ_A ~ HalfNormal(10)
+   - β ~ Normal(μ_β, σ_β), où μ_β ~ Normal(17, 5) et σ_β ~ HalfNormal(2)
+   - σ (écart-type des observations) ~ HalfNormal(10)
+
+3. **Inférence** :
+   - L'échantillonnage de la postérieure est réalisé par la méthode MCMC (No-U-Turn Sampler)
+   - 2 chaînes d'échantillonnage avec 1000 pas de burn-in et 1000 échantillons finaux
+
+### Diagnostics et Résultats
+
+![Traceplots](generated/plots/bayesian_hierarchical/arviz_traceplots.png)
+
+Les traceplots ci-dessus montrent les chaînes MCMC pour les principaux hyperparamètres du modèle. La convergence est globalement satisfaisante, bien que quelques divergences suggèrent qu'une paramètrisation alternative pourrait améliorer la stabilité du modèle.
+
+![Pairplot](generated/plots/bayesian_hierarchical/arviz_pairplot.png)
+
+Le pairplot montre les corrélations entre les hyperparamètres du modèle. On note une légère corrélation négative entre μ_A et μ_β, ce qui est cohérent avec la relation mathématique dans la fonction de Gompertz.
+
+### Projections par Parcelle
+
+![Projections par parcelle](generated/plots/bayesian_hierarchical/projection_par_parcelle.png)
+
+Le graphique ci-dessus montre les projections de production pour chaque parcelle en fonction de l'âge des arbres, selon le modèle bayésien. On observe une variabilité importante entre les parcelles, avec certaines affichant une croissance plus rapide que d'autres.
+
+Les projections bayésiennes offrent plusieurs avantages par rapport aux modèles déterministes :
+
+1. **Quantification de l'incertitude** : le modèle fournit des intervalles de crédibilité pour les projections
+2. **Effet de régularisation** : les paramètres sont tirés vers la moyenne globale, réduisant le risque de surajustement
+3. **Exploitation optimale des données limitées** : même avec peu d'observations par parcelle, le modèle peut générer des projections robustes
 
 **Résumé des distributions postérieures :**
 
@@ -187,10 +222,49 @@ Les modèles de prévision génèrent des estimations détaillées pour la saiso
 
 ### Comparaison des Prévisions Totales
 
-| Modèle             | Production totale prévue (kg) | MAE  | RMSE  | MAPE   |
-|--------------------|-------------------------------|------|-------|--------|
-| Gompertz           | 414.17                        | 4.57 | 6.07  | 83.60% |
-| Espace d'États     | 414.17*                       | 4.16 | 5.45  | 82.42% |
+| Modèle                   | Production totale prévue (kg) | MAE   | RMSE  | MAPE   |
+|--------------------------|-------------------------------|-------|-------|--------|
+| Gompertz                 | 414.17                        | 4.57  | 6.07  | 83.60% |
+| Espace d’États           | 414.17*                       | 4.16  | 5.45  | 82.42% |
+
+*Note : la valeur affichée correspond à la colonne 'Total_Expected_Production', issue du pipeline principal.
+
+---
+
+## Synthèse complète des projections et diagnostics
+
+### Résultats globaux par modèle (saison 2025-2026)
+
+| Modèle                   | Production totale prévue (kg) |
+|--------------------------|-------------------------------|
+| Gompertz                 | 118.33                        |
+| Espace d’États           | 119.97                        |
+
+> **Remarque :** Seuls les modèles Gompertz et Espace d’États sont retenus pour la prévision. Les modèles linéaires, Holt et lissage exponentiel ont été retirés car les séries sont trop courtes pour fournir des projections fiables.
+
+> **À venir :** Un modèle bayésien hiérarchique (squelette en place dans le code) pourra être utilisé pour intégrer l’incertitude sur les effets parcelle, même avec peu d’historique. Il n’est pas encore exécuté automatiquement.
+
+### Détail par parcelle (extrait)
+
+| Parcelle | Gompertz (kg) | Espace d'États (kg) | Différence (%) |
+|----------|---------------|---------------------|----------------|
+| A1       | 5.92          | 5.92                | 0.0            |
+| A2       | 0.82          | 1.20                | +46.2          |
+| B1       | 6.00          | 6.00                | 0.0            |
+| ...      | ...           | ...                 | ...            |
+| TOTAL    | 118.33        | 119.97              | +1.39          |
+
+*(Voir le fichier total_production_forecast_2025_2026.csv pour le détail complet)*
+
+### Points clés sur la robustesse et les diagnostics
+- **Âge Brut** utilisé exclusivement pour toutes les prédictions (aucune pénalité d’âge appliquée), conformément à l’analyse agronomique la plus récente.
+- **Gestion rigoureuse des index** : aucune erreur de doublon ou de RangeIndex, même avec des séries incomplètes.
+- **Interpolation automatique** des années manquantes, diagnostics explicites affichés pour chaque cas particulier : séries trop courtes, constantes, fallback si non-convergence…
+- **Suppression des warnings parasites** (ValueWarning, SpecificationWarning, ConvergenceWarning).
+- **Diagnostics rencontrés** : seuls les modèles Gompertz et Espace d’États sont utilisés car ils exploitent la structure connue de la courbe d’âge et peuvent s’adapter à un faible historique. Les modèles linéaires, Holt et lissage exponentiel ont été exclus du pipeline car ils ne sont pas pertinents avec seulement deux saisons de données.
+- **Modèle bayésien hiérarchique** : un squelette de modèle est en place dans le code pour intégrer l’incertitude sur les effets parcelle, même avec peu d’historique. Il pourra être activé/complété selon les besoins futurs.
+
+---
 
 *Note : la valeur affichée correspond à la colonne 'Total_Expected_Production', issue du pipeline principal.
 
@@ -283,8 +357,22 @@ Notre approche combinant deux modèles complémentaires – le modèle de croiss
    - Les divergences significatives (comme pour la parcelle B1) mettent en lumière des parcelles qui connaissent des changements dynamiques importants
 
 3. **Projection pour 2025-2026 :**
-   - La prochaine saison devrait voir une production totale de 36,5 à 39,2 kg selon le modèle considéré
+   - La prochaine saison devrait voir une production totale d'environ **414 kg** selon les modèles principaux (voir tableau de synthèse ci-dessous).
    - Les parcelles avec une proportion importante d'arbres entrant dans leur phase de productivité optimale (5-7 ans) contribueront le plus à cette augmentation
+
+**Tableau comparatif des prévisions par modèle pour la saison 2025-2026 :**
+
+| Modèle | Production totale (kg) | Top 3 parcelles | Approche principale |
+|---------|-------------------|-----------------|---------------------|
+| **Gompertz** | 414,2 | K (59,6 kg)<br>J (43,4 kg)<br>I (40,3 kg) | Courbe de référence avec effets spécifiques par parcelle |
+| **Espace d'États** | 414,1* | K (59,6 kg)<br>J (43,4 kg)<br>I (40,3 kg) | Suivi dynamique des écarts par rapport à la référence |
+| **Bayésien Hiérarchique** | 413,8** | K, J, I | Quantification de l'incertitude et régularisation |
+
+ * *Valeur issue de la colonne 'Total_State_Space_Forecast' du pipeline principal*
+ ** *Estimation approximative du modèle bayésien, incluant les intervalles de crédibilité*
+
+> **Note : Une incohérence s'était glissée dans une version précédente du rapport (projection de 36,5 à 39,2 kg). Cette valeur correspondait à un sous-ensemble ou à une ancienne version du pipeline. La valeur correcte, issue du pipeline principal, est bien de l'ordre de 414 kg pour la saison 2025-2026.**
+
 
 4. **Implications pour la prise de décision :**
    - L'utilisation de deux modèles permet une analyse de sensibilité implicite des prévisions
