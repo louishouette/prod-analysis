@@ -8,6 +8,7 @@ import seaborn as sns
 from scipy import stats
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
+import os
 
 # Set visual style
 sns.set(style='whitegrid', palette='muted', font_scale=1.2)
@@ -64,7 +65,7 @@ def analyze_precocity(df):
     plt.figure(figsize=(12, 8))
     sns.heatmap(precocity, cmap='YlGnBu', annot=True, fmt='.2f', linewidths=.5)
     plt.title('Production Rate by Species and Age')
-    plt.savefig('precocity_by_species_age.png', dpi=300, bbox_inches='tight')
+    plt.savefig('generated/plots/precocity/precocity_by_species_age.png', dpi=300, bbox_inches='tight')
     
     # Statistical test for age effect on precocity
     model = smf.logit('Has_Production ~ Age', data=df).fit()
@@ -106,13 +107,13 @@ def analyze_average_weight(df):
     plt.title('Average Truffle Weight by Species')
     plt.xticks(rotation=45, ha='right')
     plt.tight_layout()
-    plt.savefig('average_weight_by_species.png', dpi=300, bbox_inches='tight')
+    plt.savefig('generated/plots/truffle_weight/average_weight_by_species.png', dpi=300, bbox_inches='tight')
     
     plt.figure(figsize=(12, 8))
     sns.boxplot(x='Age', y='Poids moyen (g)', data=prod_data)
     plt.title('Average Truffle Weight by Tree Age')
     plt.tight_layout()
-    plt.savefig('average_weight_by_age.png', dpi=300, bbox_inches='tight')
+    plt.savefig('generated/plots/truffle_weight/average_weight_by_age.png', dpi=300, bbox_inches='tight')
     
     # Statistical tests
     print('\nDescriptive statistics of average truffle weight by species:')
@@ -151,13 +152,13 @@ def analyze_quantity(df):
     plt.title('Truffle Quantity per 100 Plants by Species')
     plt.xticks(rotation=45, ha='right')
     plt.tight_layout()
-    plt.savefig('quantity_by_species.png', dpi=300, bbox_inches='tight')
+    plt.savefig('generated/plots/truffle_quantity/quantity_by_species.png', dpi=300, bbox_inches='tight')
     
     plt.figure(figsize=(12, 8))
     sns.boxplot(x='Age', y='Truffles_per_100_plants', data=prod_data)
     plt.title('Truffle Quantity per 100 Plants by Tree Age')
     plt.tight_layout()
-    plt.savefig('quantity_by_age.png', dpi=300, bbox_inches='tight')
+    plt.savefig('generated/plots/truffle_quantity/quantity_by_age.png', dpi=300, bbox_inches='tight')
     
     # Statistical tests
     print('\nDescriptive statistics of truffle quantity per 100 plants by species:')
@@ -185,13 +186,13 @@ def analyze_total_weight(df):
     plt.title('Total Truffle Weight per 100 Plants by Species')
     plt.xticks(rotation=45, ha='right')
     plt.tight_layout()
-    plt.savefig('total_weight_by_species.png', dpi=300, bbox_inches='tight')
+    plt.savefig('generated/plots/total_production/total_weight_by_species.png', dpi=300, bbox_inches='tight')
     
     plt.figure(figsize=(12, 8))
     sns.boxplot(x='Age', y='Weight_per_100_plants', data=prod_data)
     plt.title('Total Truffle Weight per 100 Plants by Tree Age')
     plt.tight_layout()
-    plt.savefig('total_weight_by_age.png', dpi=300, bbox_inches='tight')
+    plt.savefig('generated/plots/total_production/total_weight_by_age.png', dpi=300, bbox_inches='tight')
     
     # Statistical tests
     print('\nDescriptive statistics of total weight per 100 plants by species:')
@@ -239,7 +240,7 @@ def correlation_analysis(df):
                 square=True, linewidths=.5)
     plt.title('Correlation Matrix of Production Metrics')
     plt.tight_layout()
-    plt.savefig('correlation_matrix.png', dpi=300, bbox_inches='tight')
+    plt.savefig('generated/plots/correlations/correlation_matrix.png', dpi=300, bbox_inches='tight')
     
     # Print key correlations
     print('\nKey correlations with Age:')
@@ -268,7 +269,7 @@ def analyze_planting_penalty(df):
     plt.ylabel('Productivity Rate (%)')
     plt.legend(title='Planted Outside Optimal Season')
     plt.tight_layout()
-    plt.savefig('planting_penalty_productivity.png', dpi=300, bbox_inches='tight')
+    plt.savefig('generated/plots/planting_effects/planting_penalty_productivity.png', dpi=300, bbox_inches='tight')
     
     # Statistical test
     prod_data = df[df['Plants Productifs'] > 0].copy()
@@ -326,8 +327,8 @@ def predict_next_season(df):
             predictions = predictions.sort_values(['Parcelle', 'Espèce', 'Next_Age'])
             
             # Save predictions
-            predictions.to_csv('next_season_predictions.csv', index=False)
-            print('\nPredictions for next season saved to "next_season_predictions.csv"')
+            predictions.to_csv('generated/data/predictions/next_season_predictions.csv', index=False)
+            print('\nPredictions for next season saved to "generated/data/predictions/next_season_predictions.csv"')
             
             # Show summary by species
             species_summary = predictions.groupby('Espèce')[
@@ -347,6 +348,15 @@ def predict_next_season(df):
 
 # Main analysis
 def main():
+    # Create output directories
+    os.makedirs('generated/plots/precocity', exist_ok=True)
+    os.makedirs('generated/plots/truffle_weight', exist_ok=True)
+    os.makedirs('generated/plots/truffle_quantity', exist_ok=True)
+    os.makedirs('generated/plots/total_production', exist_ok=True)
+    os.makedirs('generated/plots/planting_effects', exist_ok=True)
+    os.makedirs('generated/plots/correlations', exist_ok=True)
+    os.makedirs('generated/data/predictions', exist_ok=True)
+    
     # Prepare data
     data = prepare_data(production_data)
     

@@ -185,6 +185,10 @@ def main():
     # Fit the ramp-up curve to get the fixed gamma parameter
     gamma_fixed, A_fixed, beta_fixed, x_ramp, y_ramp, y_pred = fit_ramp_up_curve(rampup_data)
     
+    # Créer les répertoires s'ils n'existent pas
+    os.makedirs('generated/plots/production_projections', exist_ok=True)
+    os.makedirs('generated/data/projections', exist_ok=True)
+    
     # Plot the ramp-up curve and fit
     plt.figure(figsize=(10, 6))
     plt.scatter(x_ramp, y_ramp, color='darkblue', label='Target Ramp-up Data')
@@ -194,13 +198,13 @@ def main():
     plt.title('Truffle Production Ramp-up Curve and Gompertz Fit')
     plt.legend()
     plt.grid(True)
-    plt.savefig('rampup_curve_fit.png', dpi=300, bbox_inches='tight')
+    plt.savefig('generated/plots/production_projections/rampup_curve_fit.png', dpi=300, bbox_inches='tight')
     
     # Visualize actual production data by age
     plt.figure(figsize=(12, 8))
     sns.boxplot(x='Age', y='Production au plant (g)', data=valid_data)
     plt.title('Actual Production by Tree Age')
-    plt.savefig('actual_production_by_age.png', dpi=300, bbox_inches='tight')
+    plt.savefig('generated/plots/production_projections/actual_production_by_age.png', dpi=300, bbox_inches='tight')
     
     # Build and sample from the Bayesian model
     print("\nBuilding Bayesian hierarchical model...")
@@ -215,17 +219,20 @@ def main():
     summary = az.summary(trace, var_names=["A", "beta", "gamma", "sigma"])
     print(summary)
     
+    # Create model diagnostics directory if it doesn't exist
+    os.makedirs('generated/plots/model_diagnostics', exist_ok=True)
+    
     # Plot trace
     az.plot_trace(trace, var_names=["A_mu", "beta_mu", "A_sigma", "beta_sigma", "sigma"])
-    plt.savefig('model_trace.png', dpi=300, bbox_inches='tight')
+    plt.savefig('generated/plots/model_diagnostics/model_trace.png', dpi=300, bbox_inches='tight')
     
     # Project future production
     print("\nProjecting future production for all parcels...")
     projections = project_future_production(trace, model_data, parcels, gamma_fixed)
     
     # Save projections
-    projections.to_csv('projected_production.csv')
-    print("Projections saved to 'projected_production.csv'")
+    projections.to_csv('generated/data/projections/projected_production.csv')
+    print("Projections saved to 'generated/data/projections/projected_production.csv'")
     
     # Visualize projections
     plt.figure(figsize=(14, 10))
@@ -242,7 +249,7 @@ def main():
     plt.grid(True)
     plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
     plt.tight_layout()
-    plt.savefig('production_projections.png', dpi=300, bbox_inches='tight')
+    plt.savefig('generated/plots/production_projections/production_projections.png', dpi=300, bbox_inches='tight')
     
     # Calculate ratios relative to target curve
     ratio_df = projections.copy()
@@ -251,8 +258,8 @@ def main():
         ratio_df.loc[age] = ratio_df.loc[age] / target_value if target_value > 0 else np.nan
     
     # Save ratios
-    ratio_df.to_csv('production_ratios.csv')
-    print("Production ratio projections saved to 'production_ratios.csv'")
+    ratio_df.to_csv('generated/data/projections/production_ratios.csv')
+    print("Production ratio projections saved to 'generated/data/projections/production_ratios.csv'")
     
     # Visualize ratios
     plt.figure(figsize=(14, 10))
@@ -264,7 +271,7 @@ def main():
     plt.grid(True)
     plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
     plt.tight_layout()
-    plt.savefig('production_ratios.png', dpi=300, bbox_inches='tight')
+    plt.savefig('generated/plots/production_projections/production_ratios.png', dpi=300, bbox_inches='tight')
     
     print("\nAnalysis complete!")
 
