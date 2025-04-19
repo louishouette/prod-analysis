@@ -1,0 +1,197 @@
+Saison;Parcelle;Espèce;Age;Age Brut;Pénalité;Dates plantation;Plants;Plants Productifs;Taux de Productivité (%);Poids produit (g);Nombre de truffe;Poids moyen (g);Production au plant (g);Plants Non-Productifs à Nouveau
+2023 - 2024;A1;Chêne pubescent;2;3;-1: planted outside October -> March;12/05/2020;180;0;0.0;0;0;0;0;0
+2023 - 2024;A1;Chêne pubescent;2;2;None;10/10/2021;69;0;0.0;0;0;0;0;0
+2023 - 2024;A1;Chêne pubescent;5;5;None;12/03/2019;549;0;0.0;0;0;0;0;0
+2023 - 2024;A2;Chêne pubescent;2;3;-1: planted outside October -> March;05/05/2020;426;1;0.23;13;1;13;0;0
+2023 - 2024;A2;Chêne pubescent;2;2;None;10/10/2021;4;0;0.0;0;0;0;0;0
+2023 - 2024;A2;Chêne vert;1;2;-1: planted outside November -> March;10/10/2021;11;0;0.0;0;0;0;0;0
+2023 - 2024;A2;Chêne vert;2;3;-1: planted outside November -> March;05/05/2020;486;1;0.21;13;1;13;0;0
+2023 - 2024;B1;Chêne pubescent;2;2;None;10/10/2021;178;0;0.0;0;0;0;0;0
+2023 - 2024;B1;Chêne pubescent;2;3;-1: planted outside October -> March;04/05/2020;221;0;0.0;0;0;0;0;0
+2023 - 2024;B1;Chêne pubescent;5;5;None;20/02/2019;1300;4;0.31;90;4;22;0;0
+2023 - 2024;B2;Chêne pubescent;2;3;-1: planted outside October -> March;05/05/2020;117;0;0.0;0;0;0;0;0
+2023 - 2024;B2;Chêne pubescent;2;2;None;10/10/2021;89;0;0.0;0;0;0;0;0
+2023 - 2024;B2;Chêne pubescent;5;5;None;06/03/2019;957;6;0.63;364;7;52;0;0
+2023 - 2024;C;Chêne pubescent;2;2;None;10/10/2021;94;0;0.0;0;0;0;0;0
+2023 - 2024;C;Chêne pubescent;4;4;None;24/01/2020;1881;0;0.0;0;0;0;0;0
+2023 - 2024;D1;Chêne pubescent;1;1;None;13/02/2023;72;0;0.0;0;0;0;0;0
+2023 - 2024;D1;Chêne pubescent;2;2;None;10/10/2021;78;0;0.0;0;0;0;0;0
+2023 - 2024;D1;Chêne pubescent;4;4;None;02/03/2020;1327;1;0.08;25;1;25;0;0
+2023 - 2024;D2;Chêne pubescent;1;1;None;13/02/2023;57;0;0.0;0;0;0;0;0
+2023 - 2024;D2;Chêne pubescent;2;2;None;10/10/2021;48;0;0.0;0;0;0;0;0
+2023 - 2024;D2;Chêne pubescent;4;4;None;21/01/2020;1882;1;0.05;32;2;16;0;0
+2023 - 2024;E1;Chêne pubescent;2;3;-1: planted outside October -> March;21/04/2020;2631;6;0.23;176;10;17;0;0
+2023 - 2024;E1;Chêne pubescent;2;2;None;10/10/2021;100;0;0.0;0;0;0;0;0
+2023 - 2024;E2;Charme commun;1;2;-1: planted outside November -> March;10/10/2021;48;0;0.0;0;0;0;0;0
+2023 - 2024;E2;Charme commun;4;4;None;04/03/2020;535;1;0.19;14;1;14;0;0
+2023 - 2024;E2;Chêne pubescent;2;2;None;10/10/2021;71;0;0.0;0;0;0;0;0
+2023 - 2024;E2;Chêne pubescent;4;4;None;04/03/2020;1593;1;0.06;58;1;58;0;0
+2023 - 2024;F;Chêne pubescent;2;2;None;10/10/2021;26;0;0.0;0;0;0;0;0
+2023 - 2024;F;Chêne pubescent;4;5;-1: planted outside October -> March;11/04/2018;1328;0;0.0;0;0;0;0;0
+2023 - 2024;F;Chêne pubescent;4;4;None;22/11/2019;63;0;0.0;0;0;0;0;0
+2023 - 2024;G;Chêne vert;1;2;-1: planted outside November -> March;10/10/2021;12;0;0.0;0;0;0;0;0
+2023 - 2024;G;Chêne vert;4;5;-1: planted outside November -> March;23/04/2018;1696;3;0.18;30;3;10;0;0
+2023 - 2024;G;Chêne vert;4;4;None;27/11/2019;45;0;0.0;0;0;0;0;0
+2023 - 2024;H;Chêne pubescent;2;2;None;10/10/2021;22;0;0.0;0;0;0;0;0
+2023 - 2024;H;Chêne pubescent;4;5;-1: planted outside October -> March;17/04/2018;1746;4;0.23;158;6;26;0;0
+2023 - 2024;H;Chêne pubescent;4;4;None;22/11/2019;33;0;0.0;0;0;0;0;0
+2023 - 2024;H;Chêne pédonculé;1;2;-1: planted outside December -> March;10/10/2021;2;0;0.0;0;0;0;0;0
+2023 - 2024;H;Chêne pédonculé;3;4;-1: planted outside December -> March;22/11/2019;11;0;0.0;0;0;0;0;0
+2023 - 2024;H;Chêne pédonculé;4;5;-1: planted outside December -> March;17/04/2018;477;0;0.0;0;0;0;0;0
+2023 - 2024;I;Charme commun;4;5;-1: planted outside November -> March;27/04/2018;596;7;1.17;475;7;67;0;0
+2023 - 2024;I;Chêne chevelu;2;2;None;10/10/2021;12;0;0.0;0;0;0;0;0
+2023 - 2024;I;Chêne chevelu;4;5;-1: planted outside October -> March;27/04/2018;474;19;4.01;1762;31;56;3;0
+2023 - 2024;I;Chêne chevelu;4;4;None;22/11/2019;24;0;0.0;0;0;0;0;0
+2023 - 2024;I;Chêne pubescent;2;2;None;10/10/2021;5;0;0.0;0;0;0;0;0
+2023 - 2024;I;Chêne pubescent;4;5;-1: planted outside October -> March;27/04/2018;289;8;2.77;630;10;63;2;0
+2023 - 2024;I;Chêne pubescent;4;4;None;22/11/2019;9;0;0.0;0;0;0;0;0
+2023 - 2024;I;Chêne vert;1;2;-1: planted outside November -> March;10/10/2021;35;0;0.0;0;0;0;0;0
+2023 - 2024;I;Chêne vert;4;4;None;27/11/2019 - 28/11/2019;132;0;0.0;0;0;0;0;0
+2023 - 2024;J;Chêne chevelu;2;2;None;10/10/2021;8;0;0.0;0;0;0;0;0
+2023 - 2024;J;Chêne chevelu;4;5;-1: planted outside October -> March;16/05/2018;242;0;0.0;0;0;0;0;0
+2023 - 2024;J;Chêne chevelu;4;4;None;22/11/2019;14;0;0.0;0;0;0;0;0
+2023 - 2024;J;Chêne pubescent;2;2;None;10/10/2021;11;0;0.0;0;0;0;0;0
+2023 - 2024;J;Chêne pubescent;4;5;-1: planted outside October -> March;16/05/2018 - 22/11/2018;814;0;0.0;0;0;0;0;0
+2023 - 2024;J;Chêne pubescent;4;4;None;22/11/2019;6;0;0.0;0;0;0;0;0
+2023 - 2024;J;Chêne vert;1;2;-1: planted outside November -> March;10/10/2021;39;0;0.0;0;0;0;0;0
+2023 - 2024;J;Chêne vert;4;4;None;27/11/2019;1;0;0.0;0;0;0;0;0
+2023 - 2024;J;Chêne vert;5;5;None;22/11/2018;493;1;0.2;6;1;6;0;0
+2023 - 2024;K;Charme commun;1;2;-1: planted outside November -> March;10/10/2021;42;0;0.0;0;0;0;0;0
+2023 - 2024;K;Charme commun;2;3;-1: planted outside November -> March;13/05/2020;87;0;0.0;0;0;0;0;0
+2023 - 2024;K;Charme commun;4;4;None;24/01/2020;32;0;0.0;0;0;0;0;0
+2023 - 2024;K;Charme commun;5;5;None;11/01/2019;413;0;0.0;0;0;0;0;0
+2023 - 2024;K;Chêne pubescent;2;2;None;10/10/2021;90;0;0.0;0;0;0;0;0
+2023 - 2024;K;Chêne pubescent;2;3;-1: planted outside October -> March;13/05/2020;87;0;0.0;0;0;0;0;0
+2023 - 2024;K;Chêne pubescent;4;4;None;24/01/2020;48;0;0.0;0;0;0;0;0
+2023 - 2024;K;Chêne pubescent;5;5;None;11/01/2019;931;1;0.11;38;1;38;0;0
+2023 - 2024;K;Chêne vert;1;2;-1: planted outside November -> March;10/10/2021;18;0;0.0;0;0;0;0;0
+2023 - 2024;K;Chêne vert;2;3;-1: planted outside November -> March;13/05/2020;5;0;0.0;0;0;0;0;0
+2023 - 2024;K;Chêne vert;4;4;None;24/01/2020;22;0;0.0;0;0;0;0;0
+2023 - 2024;K;Chêne vert;5;5;None;11/01/2019;536;0;0.0;0;0;0;0;0
+2023 - 2024;L;Chêne vert;1;2;-1: planted outside November -> March;10/10/2021;43;0;0.0;0;0;0;0;0
+2023 - 2024;L;Chêne vert;4;4;None;27/11/2019;10;0;0.0;0;0;0;0;0
+2023 - 2024;L;Chêne vert;5;5;None;29/11/2018;1551;4;0.26;509;4;127;0;0
+2023 - 2024;LP;Bouleau blanc;3;3;None;31/03/2021;66;0;0.0;0;0;0;0;0
+2023 - 2024;LP;Charme commun;3;3;None;31/03/2021;90;0;0.0;0;0;0;0;0
+2023 - 2024;LP;Chêne chevelu;3;3;None;31/03/2021;50;0;0.0;0;0;0;0;0
+2023 - 2024;LP;Chêne pubescent;3;3;None;31/03/2021;60;0;0.0;0;0;0;0;0
+2023 - 2024;LP;Chêne pédonculé;3;3;None;31/03/2021;60;0;0.0;0;0;0;0;0
+2023 - 2024;LP;Chêne vert;3;3;None;31/03/2021;76;0;0.0;0;0;0;0;0
+2023 - 2024;LP;Noisetier de Byzance/Collurna;3;3;None;31/03/2021;16;0;0.0;0;0;0;0;0
+2023 - 2024;LP;Pin d'Alep;3;3;None;31/03/2021;40;0;0.0;0;0;0;0;0
+2023 - 2024;LP;Saule blanc;3;3;None;31/03/2021;16;0;0.0;0;0;0;0;0
+2023 - 2024;LP;Tilleul à petites feuilles;3;3;None;31/03/2021;90;0;0.0;0;0;0;0;0
+2024 - 2025;A1;Chêne pubescent;1;1;None;01/03/2024;69;1;1.45;157;4;39;2;0
+2024 - 2025;A1;Chêne pubescent;3;4;-1: planted outside October -> March;12/05/2020;165;1;0.61;44;1;44;0;0
+2024 - 2025;A1;Chêne pubescent;3;3;None;10/10/2021;53;0;0.0;0;0;0;0;0
+2024 - 2025;A1;Chêne pubescent;6;6;None;12/03/2019;511;7;1.37;303;9;33;0;0
+2024 - 2025;A2;Chêne pubescent;1;1;None;01/03/2024;25;1;4.0;31;1;31;1;0
+2024 - 2025;A2;Chêne pubescent;3;4;-1: planted outside October -> March;05/05/2020;401;10;2.49;828;22;37;2;0
+2024 - 2025;A2;Chêne pubescent;3;3;None;10/10/2021;4;0;0.0;0;0;0;0;0
+2024 - 2025;A2;Chêne vert;1;1;None;01/03/2024;18;0;0.0;0;0;0;0;0
+2024 - 2025;A2;Chêne vert;2;3;-1: planted outside November -> March;10/10/2021;7;0;0.0;0;0;0;0;0
+2024 - 2025;A2;Chêne vert;3;4;-1: planted outside November -> March;05/05/2020;472;46;9.75;2942;78;37;6;1
+2024 - 2025;B1;Chêne pubescent;1;1;None;01/03/2024;220;3;1.36;128;4;32;0;0
+2024 - 2025;B1;Chêne pubescent;3;4;-1: planted outside October -> March;04/05/2020;189;3;1.59;169;5;33;0;0
+2024 - 2025;B1;Chêne pubescent;3;3;None;10/10/2021;95;0;0.0;0;0;0;0;0
+2024 - 2025;B1;Chêne pubescent;6;6;None;20/02/2019;1195;112;9.37;6396;190;33;5;1
+2024 - 2025;B2;Chêne pubescent;1;1;None;01/03/2024;76;1;1.32;57;2;28;0;0
+2024 - 2025;B2;Chêne pubescent;3;4;-1: planted outside October -> March;05/05/2020;108;1;0.93;17;1;17;0;0
+2024 - 2025;B2;Chêne pubescent;3;3;None;10/10/2021;52;0;0.0;0;0;0;0;0
+2024 - 2025;B2;Chêne pubescent;6;6;None;06/03/2019;927;78;8.41;3556;110;32;3;4
+2024 - 2025;C;Chêne pubescent;1;1;None;01/03/2024;53;0;0.0;0;0;0;0;0
+2024 - 2025;C;Chêne pubescent;3;3;None;10/10/2021;83;0;0.0;0;0;0;0;0
+2024 - 2025;C;Chêne pubescent;5;5;None;24/01/2020;1839;41;2.23;1498;56;26;0;0
+2024 - 2025;D1;Chêne pubescent;1;1;None;01/03/2024;75;0;0.0;0;0;0;0;0
+2024 - 2025;D1;Chêne pubescent;2;2;None;13/02/2023;69;0;0.0;0;0;0;0;0
+2024 - 2025;D1;Chêne pubescent;3;3;None;10/10/2021;72;0;0.0;0;0;0;0;0
+2024 - 2025;D1;Chêne pubescent;5;5;None;02/03/2020;1261;6;0.48;244;6;40;0;1
+2024 - 2025;D2;Chêne pubescent;1;1;None;01/03/2024;51;0;0.0;0;0;0;0;0
+2024 - 2025;D2;Chêne pubescent;2;2;None;13/02/2023;57;0;0.0;0;0;0;0;0
+2024 - 2025;D2;Chêne pubescent;3;3;None;10/10/2021;46;0;0.0;0;0;0;0;0
+2024 - 2025;D2;Chêne pubescent;5;5;None;21/01/2020;1833;13;0.71;456;18;25;0;1
+2024 - 2025;E1;Chêne pubescent;1;1;None;01/03/2024;35;0;0.0;0;0;0;0;0
+2024 - 2025;E1;Chêne pubescent;3;4;-1: planted outside October -> March;21/04/2020;2602;84;3.23;4348;121;35;1;2
+2024 - 2025;E1;Chêne pubescent;3;3;None;10/10/2021;94;0;0.0;0;0;0;0;0
+2024 - 2025;E2;Charme commun;1;1;None;01/03/2024;45;0;0.0;0;0;0;0;1
+2024 - 2025;E2;Charme commun;2;3;-1: planted outside November -> March;10/10/2021;43;0;0.0;0;0;0;0;0
+2024 - 2025;E2;Charme commun;5;5;None;04/03/2020;495;29;5.86;2372;68;34;4;0
+2024 - 2025;E2;Chêne pubescent;1;1;None;01/03/2024;80;0;0.0;0;0;0;0;1
+2024 - 2025;E2;Chêne pubescent;3;3;None;10/10/2021;66;0;0.0;0;0;0;0;0
+2024 - 2025;E2;Chêne pubescent;5;5;None;04/03/2020;1518;10;0.66;659;18;36;0;0
+2024 - 2025;F;Chêne pubescent;1;1;None;01/03/2024;35;0;0.0;0;0;0;0;0
+2024 - 2025;F;Chêne pubescent;3;3;None;10/10/2021;16;0;0.0;0;0;0;0;0
+2024 - 2025;F;Chêne pubescent;5;6;-1: planted outside October -> March;11/04/2018;1310;12;0.92;866;19;45;0;0
+2024 - 2025;F;Chêne pubescent;5;5;None;22/11/2019;56;0;0.0;0;0;0;0;0
+2024 - 2025;G;Chêne vert;1;1;None;01/03/2024;29;0;0.0;0;0;0;0;0
+2024 - 2025;G;Chêne vert;2;3;-1: planted outside November -> March;10/10/2021;10;0;0.0;0;0;0;0;0
+2024 - 2025;G;Chêne vert;5;6;-1: planted outside November -> March;23/04/2018;1670;65;3.89;2686;95;28;1;0
+2024 - 2025;G;Chêne vert;5;5;None;27/11/2019;44;1;2.27;34;1;34;0;0
+2024 - 2025;H;Chêne pubescent;1;1;None;01/03/2024;305;0;0.0;0;0;0;0;0
+2024 - 2025;H;Chêne pubescent;3;3;None;10/10/2021;6;0;0.0;0;0;0;0;0
+2024 - 2025;H;Chêne pubescent;5;6;-1: planted outside October -> March;17/04/2018;1468;11;0.75;440;17;25;0;2
+2024 - 2025;H;Chêne pubescent;5;5;None;22/11/2019;22;0;0.0;0;0;0;0;0
+2024 - 2025;H;Chêne pédonculé;1;1;None;01/03/2024;65;0;0.0;0;0;0;0;0
+2024 - 2025;H;Chêne pédonculé;2;3;-1: planted outside December -> March;10/10/2021;1;0;0.0;0;0;0;0;0
+2024 - 2025;H;Chêne pédonculé;4;5;-1: planted outside December -> March;22/11/2019;7;0;0.0;0;0;0;0;0
+2024 - 2025;H;Chêne pédonculé;5;6;-1: planted outside December -> March;17/04/2018;417;5;1.2;173;7;24;0;0
+2024 - 2025;I;Charme commun;1;1;None;01/03/2024;56;0;0.0;0;0;0;0;0
+2024 - 2025;I;Charme commun;5;6;-1: planted outside November -> March;27/04/2018;549;57;10.38;3493;107;32;6;1
+2024 - 2025;I;Chêne chevelu;1;1;None;01/03/2024;20;0;0.0;0;0;0;0;0
+2024 - 2025;I;Chêne chevelu;3;3;None;10/10/2021;6;0;0.0;0;0;0;0;0
+2024 - 2025;I;Chêne chevelu;5;6;-1: planted outside October -> March;27/04/2018;462;65;14.07;5273;171;30;11;1
+2024 - 2025;I;Chêne chevelu;5;5;None;22/11/2019;22;1;4.55;20;1;20;0;0
+2024 - 2025;I;Chêne pubescent;1;1;None;01/03/2024;11;0;0.0;0;0;0;0;0
+2024 - 2025;I;Chêne pubescent;3;3;None;10/10/2021;2;0;0.0;0;0;0;0;0
+2024 - 2025;I;Chêne pubescent;5;6;-1: planted outside October -> March;27/04/2018;283;63;22.26;4347;134;32;15;2
+2024 - 2025;I;Chêne pubescent;5;5;None;22/11/2019;7;0;0.0;0;0;0;0;0
+2024 - 2025;I;Chêne vert;2;3;-1: planted outside November -> March;10/10/2021;29;0;0.0;0;0;0;0;0
+2024 - 2025;I;Chêne vert;5;5;None;27/11/2019 - 28/11/2019;129;9;6.98;346;12;28;2;0
+2024 - 2025;J;Chêne chevelu;1;1;None;01/03/2024;17;0;0.0;0;0;0;0;0
+2024 - 2025;J;Chêne chevelu;3;3;None;10/10/2021;5;0;0.0;0;0;0;0;0
+2024 - 2025;J;Chêne chevelu;5;6;-1: planted outside October -> March;16/05/2018;229;8;3.49;183;10;18;0;0
+2024 - 2025;J;Chêne chevelu;5;5;None;22/11/2019;13;0;0.0;0;0;0;0;0
+2024 - 2025;J;Chêne pubescent;1;1;None;01/03/2024;34;0;0.0;0;0;0;0;0
+2024 - 2025;J;Chêne pubescent;3;3;None;10/10/2021;4;0;0.0;0;0;0;0;0
+2024 - 2025;J;Chêne pubescent;5;6;-1: planted outside October -> March;16/05/2018 - 22/11/2018;787;9;1.14;420;19;22;0;0
+2024 - 2025;J;Chêne pubescent;5;5;None;22/11/2019;6;0;0.0;0;0;0;0;0
+2024 - 2025;J;Chêne vert;1;1;None;01/03/2024;12;0;0.0;0;0;0;0;0
+2024 - 2025;J;Chêne vert;2;3;-1: planted outside November -> March;10/10/2021;33;1;3.03;23;1;23;0;0
+2024 - 2025;J;Chêne vert;5;5;None;27/11/2019;1;0;0.0;0;0;0;0;0
+2024 - 2025;J;Chêne vert;6;6;None;22/11/2018;487;24;4.93;678;30;22;1;1
+2024 - 2025;K;Charme commun;1;1;None;01/03/2024;212;0;0.0;0;0;0;0;0
+2024 - 2025;K;Charme commun;2;3;-1: planted outside November -> March;10/10/2021;9;0;0.0;0;0;0;0;0
+2024 - 2025;K;Charme commun;3;4;-1: planted outside November -> March;13/05/2020;51;0;0.0;0;0;0;0;0
+2024 - 2025;K;Charme commun;5;5;None;24/01/2020;21;0;0.0;0;0;0;0;0
+2024 - 2025;K;Charme commun;6;6;None;11/01/2019;281;0;0.0;0;0;0;0;0
+2024 - 2025;K;Chêne pubescent;1;1;None;01/03/2024;206;0;0.0;0;0;0;0;0
+2024 - 2025;K;Chêne pubescent;3;3;None;10/10/2021;35;0;0.0;0;0;0;0;0
+2024 - 2025;K;Chêne pubescent;3;4;-1: planted outside October -> March;13/05/2020;57;0;0.0;0;0;0;0;0
+2024 - 2025;K;Chêne pubescent;5;5;None;24/01/2020;39;1;2.56;28;1;28;0;0
+2024 - 2025;K;Chêne pubescent;6;6;None;11/01/2019;819;4;0.49;363;13;27;0;1
+2024 - 2025;K;Chêne vert;1;1;None;01/03/2024;26;0;0.0;0;0;0;0;0
+2024 - 2025;K;Chêne vert;2;3;-1: planted outside November -> March;10/10/2021;11;0;0.0;0;0;0;0;0
+2024 - 2025;K;Chêne vert;3;4;-1: planted outside November -> March;13/05/2020;5;0;0.0;0;0;0;0;0
+2024 - 2025;K;Chêne vert;5;5;None;24/01/2020;21;1;4.76;17;1;17;0;0
+2024 - 2025;K;Chêne vert;6;6;None;11/01/2019;518;15;2.9;395;17;23;0;0
+2024 - 2025;L;Chêne vert;1;1;None;01/03/2024;23;1;4.35;41;1;41;1;0
+2024 - 2025;L;Chêne vert;2;3;-1: planted outside November -> March;10/10/2021;33;0;0.0;0;0;0;0;0
+2024 - 2025;L;Chêne vert;5;5;None;27/11/2019;10;0;0.0;0;0;0;0;0
+2024 - 2025;L;Chêne vert;6;6;None;29/11/2018;1538;104;6.76;6596;142;46;4;0
+2024 - 2025;LP;Bouleau blanc;1;1;None;01/03/2024;4;0;0.0;0;0;0;0;0
+2024 - 2025;LP;Bouleau blanc;4;4;None;31/03/2021;62;2;3.23;69;3;23;1;0
+2024 - 2025;LP;Charme commun;1;1;None;01/03/2024;7;0;0.0;0;0;0;0;0
+2024 - 2025;LP;Charme commun;4;4;None;31/03/2021;83;3;3.61;176;5;35;2;0
+2024 - 2025;LP;Chêne chevelu;1;1;None;01/03/2024;1;0;0.0;0;0;0;0;0
+2024 - 2025;LP;Chêne chevelu;4;4;None;31/03/2021;49;0;0.0;0;0;0;0;0
+2024 - 2025;LP;Chêne pubescent;4;4;None;31/03/2021;60;0;0.0;0;0;0;0;0
+2024 - 2025;LP;Chêne pédonculé;1;1;None;01/03/2024;25;0;0.0;0;0;0;0;0
+2024 - 2025;LP;Chêne pédonculé;4;4;None;31/03/2021;35;0;0.0;0;0;0;0;0
+2024 - 2025;LP;Chêne vert;1;1;None;01/03/2024;2;0;0.0;0;0;0;0;0
+2024 - 2025;LP;Chêne vert;4;4;None;31/03/2021;74;2;2.7;160;5;32;2;0
+2024 - 2025;LP;Noisetier de Byzance/Collurna;4;4;None;31/03/2021;16;0;0.0;0;0;0;0;0
+2024 - 2025;LP;Pin d'Alep;1;1;None;01/03/2024;1;0;0.0;0;0;0;0;0
+2024 - 2025;LP;Pin d'Alep;4;4;None;31/03/2021;39;20;51.28;2509;83;30;64;0
+2024 - 2025;LP;Saule blanc;4;4;None;31/03/2021;16;0;0.0;0;0;0;0;0
+2024 - 2025;LP;Tilleul à petites feuilles;1;1;None;01/03/2024;2;0;0.0;0;0;0;0;0
+2024 - 2025;LP;Tilleul à petites feuilles;4;4;None;31/03/2021;88;0;0.0;0;0;0;0;0
