@@ -16,15 +16,19 @@ import argparse
 # Ajouter les répertoires au path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-# Importer les modules utilitaires
+# Importer les modules utilitaires et les modèles statistiques depuis la nouvelle structure
 from models.utils import load_data, prepare_data, setup_directories
-
-# Importer les modèles statistiques
-from models.gompertz import gompertz, fit_ramp_up_curve, build_bayesian_model, sample_posterior, project_future_production
-from models.state_space import build_state_space_model, project_state_space_production
-from models.linear_trend import build_linear_trend_model, project_linear_trend, prepare_time_series_data
-from models.exponential_smoothing import build_exponential_smoothing_model, project_exponential_smoothing
-from models.holts_method import build_holts_trend_model, project_holts_trend
+from models.shared import gompertz
+from models import (
+    # Imports des modèles restructurés
+    fit_ramp_up_curve, build_bayesian_model, sample_posterior, project_future_production,
+    build_state_space_model, project_state_space_production
+)
+from models import (
+    build_linear_trend_model, project_linear_trend, prepare_time_series_data,
+    build_exponential_smoothing_model, project_exponential_smoothing,
+    build_holts_trend_model, project_holts_trend
+)
 
 # Aliases pour compatibilité avec le pipeline principal
 run_linear_trend_model = build_linear_trend_model
@@ -186,9 +190,15 @@ def run_state_space_model(data, rampup_data, gompertz_params, next_season=2025):
     
     # Calcul des ratios par rapport à la courbe cible
     ss_ratio_df = ss_projections.copy()
+    # S'assurer que toutes les colonnes sont numériques avant la division
+    ss_ratio_df = ss_ratio_df.apply(pd.to_numeric, errors='coerce')
+    
     for age in ss_ratio_df.index:
         target_value = gompertz(age, A_fixed, beta_fixed, gamma_fixed)
-        ss_ratio_df.loc[age] = ss_ratio_df.loc[age] / target_value if target_value > 0 else np.nan
+        if target_value > 0:
+            ss_ratio_df.loc[age] = ss_ratio_df.loc[age] / target_value
+        else:
+            ss_ratio_df.loc[age] = np.nan
     
     # Sauvegarder les ratios
     ss_ratio_df.to_csv('generated/data/projections/state_space_production_ratios.csv')

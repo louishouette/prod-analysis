@@ -6,7 +6,104 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from models.gompertz.model import fit_ramp_up_curve, gompertz
-from models.alternative_growth import fit_alternative_growth, logistic_growth, modified_exp_growth, project_alternative_growth
+from models.shared.functions import logistic_growth, modified_exp_growth
+
+def logistic_growth(age, K, r, t0):
+    """Modèle de croissance logistique."""
+    return K / (1 + np.exp(-r * (age - t0)))
+
+def modified_exp_growth(age, a, b, c):
+    """Modèle de croissance exponentielle modifiée."""
+    return a * (1 - np.exp(-b * age)) ** c
+
+def fit_alternative_growth(rampup_data, model_type='logistic'):
+    """Ajuste un modèle de croissance alternatif."""
+    from scipy.optimize import curve_fit
+    
+    # Extraction des données
+    ages = rampup_data['Age'].values
+    productions = rampup_data['Production au plant (g)'].values
+    
+    if model_type == 'logistic':
+        # Paramètres initiaux pour logistique
+        K_init = productions.max() * 1.2
+        r_init = 0.8
+        t0_init = 5.0
+        
+        try:
+            params, pcov = curve_fit(
+                logistic_growth, 
+                ages, 
+                productions, 
+                p0=[K_init, r_init, t0_init],
+                bounds=([0, 0, 0], [200, 5, 12])
+            )
+            
+            # Calcul de R²
+            K_opt, r_opt, t0_opt = params
+            productions_pred = logistic_growth(ages, K_opt, r_opt, t0_opt)
+            
+            ss_tot = np.sum((productions - np.mean(productions)) ** 2)
+            ss_res = np.sum((productions - productions_pred) ** 2)
+            r_squared = 1 - (ss_res / ss_tot)
+            
+            return K_opt, r_opt, t0_opt, r_squared
+            
+        except Exception as e:
+            print(f"Erreur lors de l'ajustement du modèle logistique: {e}")
+            return None, None, None, None
+            
+    elif model_type == 'modified_exp':
+        # Paramètres initiaux pour exponentielle modifiée
+        a_init = productions.max() * 1.2
+        b_init = 0.3
+        c_init = 1.5
+        
+        try:
+            params, pcov = curve_fit(
+                modified_exp_growth, 
+                ages, 
+                productions, 
+                p0=[a_init, b_init, c_init],
+                bounds=([0, 0, 0], [200, 2, 5])
+            )
+            
+            # Calcul de R²
+            a_opt, b_opt, c_opt = params
+            productions_pred = modified_exp_growth(ages, a_opt, b_opt, c_opt)
+            
+            ss_tot = np.sum((productions - np.mean(productions)) ** 2)
+            ss_res = np.sum((productions - productions_pred) ** 2)
+            r_squared = 1 - (ss_res / ss_tot)
+            
+            return a_opt, b_opt, c_opt, r_squared
+            
+        except Exception as e:
+            print(f"Erreur lors de l'ajustement du modèle exponentiel modifié: {e}")
+            return None, None, None, None
+    
+    return None, None, None, None
+
+def project_alternative_growth(params, max_age=12, model_type='logistic'):
+    """Projette la courbe de croissance selon le modèle alternatif choisi."""
+    import numpy as np
+    import pandas as pd
+    
+    ages = np.arange(1, max_age + 1)
+    
+    if model_type == 'logistic':
+        K_opt, r_opt, t0_opt = params[0:3]
+        productions = logistic_growth(ages, K_opt, r_opt, t0_opt)
+    
+    elif model_type == 'modified_exp':
+        a_opt, b_opt, c_opt = params[0:3]
+        productions = modified_exp_growth(ages, a_opt, b_opt, c_opt)
+    
+    else:
+        print(f"Type de modèle '{model_type}' non reconnu")
+        return None
+    
+    return pd.DataFrame({'Age': ages, 'Production au plant (g)': productions})
 from models.bayesian_hierarchical import run_bayesian_hierarchical_model
 import warnings
 
@@ -24,42 +121,42 @@ def load_data():
         production_file = 'production.csv'
         rampup_file = 'ramp-up.csv'
         
-        # Chargement avec du00e9tection automatique du du00e9limiteur
+        # Chargement avec détection automatique du délimiteur
         production_data = None
         rampup_data = None
         
-        # Essayer d'abord avec le du00e9limiteur ','
+        # Essayer d'abord avec le délimiteur ','
         try:
             production_data = pd.read_csv(production_file, delimiter=',')
-            if production_data.shape[1] <= 1:  # Si une seule colonne, le du00e9limiteur est probablement incorrect
+            if production_data.shape[1] <= 1:  # Si une seule colonne, le délimiteur est probablement incorrect
                 production_data = pd.read_csv(production_file, delimiter=';')
         except:
-            # Essayer avec ';' si u00e7a u00e9choue
+            # Essayer avec ';' si c'est un échec
             production_data = pd.read_csv(production_file, delimiter=';')
             
-        # Mu00eame approche pour rampup_data
+        # Même approche pour rampup_data
         try:
             rampup_data = pd.read_csv(rampup_file, delimiter=',')
-            if rampup_data.shape[1] <= 1:  # Si une seule colonne, le du00e9limiteur est probablement incorrect
+            if rampup_data.shape[1] <= 1:  # Si une seule colonne, le délimiteur est probablement incorrect
                 rampup_data = pd.read_csv(rampup_file, delimiter=';')
         except:
-            # Essayer avec ';' si u00e7a u00e9choue
+            # Essayer avec ';' si c'est un échec
             rampup_data = pd.read_csv(rampup_file, delimiter=';')
         
-        print(f"Donnu00e9es chargu00e9es avec succu00e8s:\n - Production: {production_data.shape}\n - Ramp-up: {rampup_data.shape}")
+        print(f"Données chargées avec succès:\n - Production: {production_data.shape}\n - Ramp-up: {rampup_data.shape}")
         
-        # S'assurer que "Age" est utilisu00e9 comme colonne d'u00e2ge
+        # S'assurer que "Age" est utilisé comme colonne d'âge
         if 'Age Brut' in production_data.columns:
             production_data = production_data.rename(columns={'Age Brut': 'Age'})
-            print("'Age Brut' renommu00e9 en 'Age'")
+            print("'Age Brut' renommé en 'Age'")
         
-        # Gu00e9rer les colonnes dupliquu00e9es
+        # Gérer les colonnes dupliquées
         if production_data.columns.duplicated().any():
-            # Identifier les colonnes dupliquu00e9es
+            # Identifier les colonnes dupliquées
             dupes = production_data.columns[production_data.columns.duplicated()].tolist()
-            print(f"Colonnes dupliquu00e9es du00e9tectu00e9es: {dupes}, suppression...")
+            print(f"Colonnes dupliquées détectées: {dupes}, suppression...")
             
-            # Cru00e9er une liste de nouveaux noms de colonnes uniques
+            # Créer une liste de nouveaux noms de colonnes uniques
             new_cols = []
             seen = set()
             for col in production_data.columns:
@@ -69,7 +166,7 @@ def load_data():
                         col_new = "Age_" + str(len([c for c in new_cols if c.startswith("Age")]))
                         new_cols.append(col_new)
                     else:
-                        # Pour les autres colonnes dupliquu00e9es, on les ignore
+                        # Pour les autres colonnes dupliquées, on les ignore
                         continue
                 else:
                     new_cols.append(col)
@@ -81,26 +178,26 @@ def load_data():
         return production_data, rampup_data
         
     except Exception as e:
-        print(f"Erreur lors du chargement des donnu00e9es: {e}")
+        print(f"Erreur lors du chargement des données: {e}")
         return None, None
 
 def run_gompertz_based_model(production_data, rampup_data, verbose=True):
-    """Exu00e9cute les modu00e8les basu00e9s sur Gompertz"""
+    """Exécute les modèles basés sur Gompertz"""
     try:
         # Ajustement de la courbe Gompertz
         A_opt, beta_opt, gamma_opt, r_squared = fit_ramp_up_curve(rampup_data)
         
         if verbose:
-            print(f"\nModu00e8le Gompertz:\n")
-            print(f"Paramu00e8tres optimaux:\n - A (asymptote): {A_opt:.2f}\n - beta: {beta_opt:.2f}\n - gamma: {gamma_opt:.4f}")
-            print(f"Qualitu00e9 de l'ajustement (Ru00b2): {r_squared:.4f}")
+            print(f"\nModèle Gompertz:\n")
+            print(f"Paramètres optimaux:\n - A (asymptote): {A_opt:.2f}\n - beta: {beta_opt:.2f}\n - gamma: {gamma_opt:.4f}")
+            print(f"Qualité de l'ajustement (R²): {r_squared:.4f}")
         
-        # Projections pour les u00e2ges de 1 u00e0 12 ans
+        # Projections pour les âges de 1 à 12 ans
         ages = np.arange(1, 13)
         gompertz_proj = gompertz(ages, A_opt, beta_opt, gamma_opt)
         
-        # Calcul de production totale projetu00e9e pour 2025-2026
-        # Extraire les parcelles et leurs u00e2ges actuels
+        # Calcul de production totale projetée pour 2025-2026
+        # Extraire les parcelles et leurs âges actuels
         current_season = production_data['Saison'].max()
         parcelles = production_data[production_data['Saison'] == current_season]
         
@@ -108,58 +205,58 @@ def run_gompertz_based_model(production_data, rampup_data, verbose=True):
         next_season_parcelles = parcelles.copy()
         next_season_parcelles['Age'] = next_season_parcelles['Age'] + 1
         
-        # Calculer la production projetu00e9e
+        # Calculer la production projetée
         projected_production = 0
         for _, row in next_season_parcelles.iterrows():
-            age = min(row['Age'], 12)  # Limiter u00e0 l'age maximum de 12 ans
+            age = min(row['Age'], 12)  # Limiter à l'âge maximum de 12 ans
             production_per_plant = gompertz(age, A_opt, beta_opt, gamma_opt)
             projected_production += production_per_plant * row['Plants']
         
         projected_production_kg = projected_production / 1000
         
         if verbose:
-            print(f"Production totale projetu00e9e pour 2025-2026 (Gompertz): {projected_production_kg:.2f} kg")
+            print(f"Production totale projetée pour 2025-2026 (Gompertz): {projected_production_kg:.2f} kg")
         
         return A_opt, beta_opt, gamma_opt, r_squared, projected_production_kg, gompertz_proj
     
     except Exception as e:
-        print(f"Erreur lors de l'exu00e9cution du modu00e8le Gompertz: {e}")
+        print(f"Erreur lors de l'exécution du modèle Gompertz: {e}")
         return None, None, None, None, None, None
 
 def run_alternative_model(production_data, rampup_data, model_type='logistic', verbose=True):
-    """Exu00e9cute les modu00e8les alternatifs u00e0 Gompertz"""
+    """Exécute les modèles alternatifs à Gompertz"""
     try:
         # Ajustement de la courbe alternative
         params = fit_alternative_growth(rampup_data, model_type=model_type)
         
         if params[0] is None:
-            print(f"L'ajustement du modu00e8le {model_type} a u00e9chouu00e9")
+            print(f"L'ajustement du modèle {model_type} a échoué")
             return None, None, None
         
         if model_type == 'logistic':
             K_opt, r_opt, t0_opt, r_squared = params
             if verbose:
-                print(f"\nModu00e8le Logistique:\n")
-                print(f"Paramu00e8tres optimaux:\n - K (capacitu00e9): {K_opt:.2f}\n - r: {r_opt:.2f}\n - t0: {t0_opt:.2f}")
-                print(f"Qualitu00e9 de l'ajustement (Ru00b2): {r_squared:.4f}")
+                print(f"\nModèle Logistique:\n")
+                print(f"Paramètres optimaux:\n - K (capacité): {K_opt:.2f}\n - r: {r_opt:.2f}\n - t0: {t0_opt:.2f}")
+                print(f"Qualité de l'ajustement (R²): {r_squared:.4f}")
             
-            # Projections pour les u00e2ges de 1 u00e0 12 ans
+            # Projections pour les âges de 1 à 12 ans
             ages = np.arange(1, 13)
             alt_proj = logistic_growth(ages, K_opt, r_opt, t0_opt)
         
         elif model_type == 'modified_exp':
             a_opt, b_opt, c_opt, r_squared = params
             if verbose:
-                print(f"\nModu00e8le Exponentiel Modifiu00e9:\n")
-                print(f"Paramu00e8tres optimaux:\n - a (asymptote): {a_opt:.2f}\n - b: {b_opt:.2f}\n - c: {c_opt:.2f}")
-                print(f"Qualitu00e9 de l'ajustement (Ru00b2): {r_squared:.4f}")
+                print(f"\nModèle Exponentiel Modifié:\n")
+                print(f"Paramètres optimaux:\n - a (asymptote): {a_opt:.2f}\n - b: {b_opt:.2f}\n - c: {c_opt:.2f}")
+                print(f"Qualité de l'ajustement (R²): {r_squared:.4f}")
             
-            # Projections pour les u00e2ges de 1 u00e0 12 ans
+            # Projections pour les âges de 1 à 12 ans
             ages = np.arange(1, 13)
             alt_proj = modified_exp_growth(ages, a_opt, b_opt, c_opt)
             
-        # Calcul de production totale projetu00e9e pour 2025-2026
-        # Extraire les parcelles et leurs u00e2ges actuels
+        # Calcul de production totale projetée pour 2025-2026
+        # Extraire les parcelles et leurs âges actuels
         current_season = production_data['Saison'].max()
         parcelles = production_data[production_data['Saison'] == current_season]
         

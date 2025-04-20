@@ -7,19 +7,7 @@ import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 import pymc as pm
 import arviz as az
-
-# Fonction de croissance Gompertz
-def gompertz(age, A, beta, gamma):
-    """
-    Modèle de croissance Gompertz.
-    
-    Paramètres:
-    age : âge des arbres (en années)
-    A : asymptote (production maximale)
-    beta : paramètre de déplacement
-    gamma : paramètre de taux de croissance
-    """
-    return A * np.exp(-beta * np.exp(-gamma * age))
+from models.shared.functions import gompertz
 
 def fit_ramp_up_curve(rampup_data):
     """
@@ -63,7 +51,7 @@ def fit_ramp_up_curve(rampup_data):
 def build_bayesian_model(data, gamma_fixed, A_mean=None, beta_mean=None):
     """
     Construction du modèle bayésien hiérarchique pour les paramètres spécifiques à chaque parcelle.
-    Utilise l'Âge Brut comme variable d'âge.
+    Utilise l'âge Brut comme variable d'âge.
     """
     # Création d'une liste unique des parcelles
     parcels = data['Parcelle'].unique()
@@ -119,6 +107,7 @@ def sample_posterior(model, cores=1, chains=2, tune=1000, draws=1000):
     """
     with model:
         # Initialisation du sampler NUTS
+        print("Initialisation de NUTS...")
         trace = pm.sample(
             draws=draws,
             tune=tune,
