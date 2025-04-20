@@ -20,22 +20,11 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from models.utils import load_data, prepare_data, setup_directories
 
 # Importer les modèles statistiques
-from models.gompertz.model import (
-    gompertz, fit_ramp_up_curve, build_bayesian_model,
-    sample_posterior, project_future_production
-)
-from models.state_space.model import (
-    build_state_space_model, project_state_space_production
-)
-from models.linear_trend.model import (
-    build_linear_trend_model, project_linear_trend, prepare_time_series_data
-)
-from models.exponential_smoothing.model import (
-    build_exponential_smoothing_model, project_exponential_smoothing
-)
-from models.holts_method.model import (
-    build_holts_trend_model, project_holts_trend
-)
+from models.gompertz import gompertz, fit_ramp_up_curve, build_bayesian_model, sample_posterior, project_future_production
+from models.state_space import build_state_space_model, project_state_space_production
+from models.linear_trend import build_linear_trend_model, project_linear_trend, prepare_time_series_data
+from models.exponential_smoothing import build_exponential_smoothing_model, project_exponential_smoothing
+from models.holts_method import build_holts_trend_model, project_holts_trend
 
 # Aliases pour compatibilité avec le pipeline principal
 run_linear_trend_model = build_linear_trend_model

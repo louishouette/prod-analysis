@@ -11,7 +11,7 @@ def run_bayesian_hierarchical_model(data, rampup_data, output_dir='generated', m
     - Projette la production future
     - Sauvegarde les résultats et graphiques
     """
-    from models.gompertz.model import fit_ramp_up_curve, build_bayesian_model, sample_posterior, project_future_production
+    from models.gompertz import fit_ramp_up_curve, build_bayesian_model, sample_posterior, project_future_production
     
     # Vérifier si les dataframes ont le bon format (multiple colonnes)
     # Si une seule colonne et délimiteur potentiellement incorrect, recharger avec le bon délimiteur
